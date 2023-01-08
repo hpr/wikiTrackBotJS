@@ -70,7 +70,7 @@ const wbEdit = wikibaseEdit({
   maxlag: 5,
 });
 
-const aaIds = ['14680006'];
+const aaIds = ['14743162'];
 
 const { countryCodeCache, disciplineCache, locationCache } = JSON.parse(fs.readFileSync('./cache.json', 'utf-8'));
 
@@ -165,18 +165,34 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
 
   const markToSecs = (mark) => {
     const groups = mark.split(':');
-    if (groups.length === 1) return +mark;
-    if (groups.length === 2) return +groups[0] * 60 + +groups[1];
-    if (groups.length === 3) return +groups[0] * 60 * 60 + +groups[1] * 60 + +groups[2];
+    let res;
+    if (groups.length === 1) res = +mark;
+    if (groups.length === 2) res = +groups[0] * 60 + +groups[1];
+    if (groups.length === 3) res = +groups[0] * 60 * 60 + +groups[1] * 60 + +groups[2];
+    res = String(Math.round(res * 100) / 100);
+    if (res.includes('.')) return res.slice(0, res.lastIndexOf('.') + 3);
+    return res;
   };
   const personalBests = [];
   for (const { indoor, discipline, mark, notLegal, venue, date } of results) {
     let location = locationCache[venue];
     if (!location) {
-      let locationSearch = venue.split('(')[0].trim();
-      if (locationSearch.indexOf(', ', locationSearch.indexOf(', ') + 1) !== -1) locationSearch = locationSearch.split(', ').slice(1).join(', ');
-      const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(locationSearch))).json();
-      location = Object.keys(entities)[0];
+      if (venue.includes('(USA)')) {
+        let locationSearch = venue.split('(')[0].trim();
+        if (locationSearch.indexOf(', ', locationSearch.indexOf(', ') + 1) !== -1) locationSearch = locationSearch.split(', ').slice(1).join(', ');
+        const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(locationSearch))).json();
+        location = Object.keys(entities)[0];
+      } else {
+        const countryCode = venue.slice(venue.indexOf('(') + 1, venue.indexOf(')'));
+        let qCountry = countryCodeCache[countryCode];
+        if (!qCountry) {
+          const { name } = country.info(convertIocCode(countryCode).iso2);
+          const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
+          qCountry = Object.keys(entities)[0];
+          countryCodeCache[countryCode] = qCountry;
+        }
+        location = qCountry;
+      }
       if (location == -1) {
         fs.appendFileSync('./misses.txt', `LOCATION MISS: ${venue}\n`, 'utf-8');
         location = undefined;
@@ -185,6 +201,7 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
     }
     personalBests.push({
       amount: markToSecs(mark),
+      precision: mark.match(/\.\d\d$/) ? '.005' : mark.match(/\.\d/) ? '.05' : '1',
       unit: WD.Q_SECOND,
       qualifiers: {
         [WD.P_SPORTS_DISCIPLINE_COMPETED_IN]: disciplineCache[discipline],
@@ -231,7 +248,7 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
     id: qid,
     type: 'item',
     labels: { en: athName },
-    descriptions: { en: `${demonym} athletics competitor` },
+    descriptions: { en: `${demonym || ''} athletics competitor`.trim() },
     claims: {
       [WD.P_INSTANCE_OF]: WD.Q_HUMAN,
       [WD.P_SEX_OR_GENDER]: { men: WD.Q_MALE, women: WD.Q_FEMALE }[sexNameUrlSlug],
