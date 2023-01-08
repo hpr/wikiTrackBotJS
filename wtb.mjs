@@ -51,7 +51,7 @@ const wbEdit = wikibaseEdit({
   maxlag: 5,
 });
 
-const aaIds = ['14479795'];
+const aaIds = ['14530957', '14649486', '14720037', '14565055', '14811362', '14633028', '14316688', '14667579', '014651823', '14705966', '14568455', '14774481'];
 
 for (const aaId of aaIds) {
   const qid = wbk.parse.wb.pagesTitles(await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}` }))).json())[0];
@@ -135,12 +135,12 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
     descriptions: { en: `${demonym} athletics competitor` },
     claims: {
       [WD.P_INSTANCE_OF]: WD.Q_HUMAN,
-      [WD.P_SEX_OR_GENDER]: sexNameUrlSlug === 'men' ? WD.Q_MALE : WD.Q_FEMALE,
+      [WD.P_SEX_OR_GENDER]: { men: WD.Q_MALE, women: WD.Q_FEMALE }[sexNameUrlSlug],
       [WD.P_SPORT]: WD.Q_ATHLETICS,
       [WD.P_OCCUPATION]: WD.Q_ATHLETICS_COMPETITOR,
       [WD.P_WA_ATHLETE_ID]: aaId,
       [WD.P_COUNTRY_FOR_SPORT]: { value: qCountry, references },
-      [WD.P_DATE_OF_BIRTH]: { value: new Date(birthDate).toISOString().split('T')[0], references },
+      [WD.P_DATE_OF_BIRTH]: birthDate ? { value: new Date(birthDate).toISOString().split('T')[0], references } : undefined,
       [WD.P_GIVEN_NAME]: qGivenName,
       [WD.P_FAMILY_NAME]: qFamilyName,
     },
