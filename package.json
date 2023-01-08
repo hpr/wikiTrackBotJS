@@ -1,0 +1,20 @@
+{
+  "name": "wikitrackbotjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node wtb.mjs"
+  },
+  "author": "",
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "convert-country-codes": "^1.0.0",
+    "countryjs": "^1.8.0",
+    "dotenv": "^16.0.3",
+    "jsdom": "^21.0.0",
+    "name-fixer": "^1.0.0",
+    "wikibase-edit": "^5.3.0",
+    "wikibase-sdk": "^8.1.1"
+  }
+}
