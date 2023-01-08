@@ -54,7 +54,6 @@ const wbEdit = wikibaseEdit({
 const aaIds = ['14530957', '14649486', '14720037', '14565055', '14811362', '14633028', '14316688', '14667579', '014651823', '14705966', '14568455', '14774481'];
 
 for (const aaId of aaIds) {
-  const qid = wbk.parse.wb.pagesTitles(await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}` }))).json())[0];
   const { window } = new JSDOM(await (await fetch(`https://worldathletics.org/athletes/_/${aaId}`)).text());
   const graphqlSrc = [...window.document.querySelectorAll('script[src]')]
     .filter((script) => script.getAttribute('src').match(/\/_next\/static\/chunks\/[a-z0-9]{40}\.[a-z0-9]{20}\.js/))[1]
@@ -104,7 +103,8 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
       }),
     })
   ).json();
-  const { firstName, lastName, countryCode, birthDate, sexNameUrlSlug } = data.competitor.basicData;
+  const { firstName, lastName, countryCode, birthDate, sexNameUrlSlug, iaafId } = data.competitor.basicData;
+  const qid = wbk.parse.wb.pagesTitles(await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}|${WD.P_WA_ATHLETE_ID}=${iaafId}` }))).json())[0];
   const athName = `${firstName} ${nameFixer(lastName)}`;
   const { name, demonym } = country.info(convertIocCode(countryCode).iso2);
   const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
