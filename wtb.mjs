@@ -16,6 +16,8 @@ const WD = {
   P_WA_ATHLETE_ID: 'P1146',
   P_COUNTRY_FOR_SPORT: 'P1532',
   P_STATED_IN: 'P248',
+  P_FAMILY_NAME: 'P734',
+  P_GIVEN_NAME: 'P735',
 
   Q_HUMAN: 'Q5',
   Q_ATHLETICS: 'Q542',
@@ -23,6 +25,11 @@ const WD = {
   Q_FEMALE: 'Q6581072',
   Q_ATHLETICS_COMPETITOR: 'Q11513337',
   Q_WA_DB: 'Q54960205',
+  Q_FAMILY_NAME: 'Q101352',
+  Q_GIVEN_NAME: 'Q202444',
+  Q_MALE_GIVEN_NAME: 'Q12308941',
+  Q_FEMALE_GIVEN_NAME: 'Q11879590',
+  Q_UNISEX_GIVEN_NAME: 'Q3409032',
 };
 
 const wbk = WBK({
@@ -44,9 +51,10 @@ const wbEdit = wikibaseEdit({
   maxlag: 5,
 });
 
-const aaIds = ['14237773'];
+const aaIds = ['14479795'];
 
 for (const aaId of aaIds) {
+  const qid = wbk.parse.wb.pagesTitles(await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}` }))).json())[0];
   const { window } = new JSDOM(await (await fetch(`https://worldathletics.org/athletes/_/${aaId}`)).text());
   const graphqlSrc = [...window.document.querySelectorAll('script[src]')]
     .filter((script) => script.getAttribute('src').match(/\/_next\/static\/chunks\/[a-z0-9]{40}\.[a-z0-9]{20}\.js/))[1]
@@ -101,8 +109,27 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
   const { name, demonym } = country.info(convertIocCode(countryCode).iso2);
   const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
   const qCountry = Object.keys(entities)[0];
+
+  const qGivenName = wbk.parse.wb.pagesTitles(
+    await (
+      await fetch(
+        wbk.cirrusSearchPages({
+          search: firstName,
+          haswbstatement: `${[WD.Q_GIVEN_NAME, WD.Q_MALE_GIVEN_NAME, WD.Q_FEMALE_GIVEN_NAME, WD.Q_UNISEX_GIVEN_NAME]
+            .map((q) => `${WD.P_INSTANCE_OF}=${q}`)
+            .join('|')}`,
+        })
+      )
+    ).json()
+  )[0];
+  const qFamilyName = wbk.parse.wb.pagesTitles(
+    await (await fetch(wbk.cirrusSearchPages({ search: lastName, haswbstatement: `${WD.P_INSTANCE_OF}=${WD.Q_FAMILY_NAME}` }))).json()
+  )[0];
+
   const references = { [WD.P_STATED_IN]: WD.Q_WA_DB };
-  const { entity } = await wbEdit.entity.create({
+  const action = qid ? 'edit' : 'create';
+  const { entity } = await wbEdit.entity[action]({
+    id: qid,
     type: 'item',
     labels: { en: athName },
     descriptions: { en: `${demonym} athletics competitor` },
@@ -114,7 +141,10 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
       [WD.P_WA_ATHLETE_ID]: aaId,
       [WD.P_COUNTRY_FOR_SPORT]: { value: qCountry, references },
       [WD.P_DATE_OF_BIRTH]: { value: new Date(birthDate).toISOString().split('T')[0], references },
+      [WD.P_GIVEN_NAME]: qGivenName,
+      [WD.P_FAMILY_NAME]: qFamilyName,
     },
+    reconciliation: { mode: 'merge' },
   });
   console.log(entity);
 }
