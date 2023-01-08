@@ -5,6 +5,7 @@ import { JSDOM } from 'jsdom';
 import { convertIocCode } from 'convert-country-codes';
 import country from 'countryjs';
 import { nameFixer } from 'name-fixer';
+import fs from 'fs';
 dotenv.config();
 
 const WD = {
@@ -18,6 +19,9 @@ const WD = {
   P_STATED_IN: 'P248',
   P_FAMILY_NAME: 'P734',
   P_GIVEN_NAME: 'P735',
+  P_SPORTS_DISCIPLINE_COMPETED_IN: 'P2416',
+  P_WORK_PERIOD_START: 'P2031',
+  P_WORK_PERIOD_END: 'P2032',
 
   Q_HUMAN: 'Q5',
   Q_ATHLETICS: 'Q542',
@@ -30,6 +34,7 @@ const WD = {
   Q_MALE_GIVEN_NAME: 'Q12308941',
   Q_FEMALE_GIVEN_NAME: 'Q11879590',
   Q_UNISEX_GIVEN_NAME: 'Q3409032',
+  Q_SPORTS_DISCIPLINE: 'Q2312410',
 };
 
 const wbk = WBK({
@@ -51,15 +56,20 @@ const wbEdit = wikibaseEdit({
   maxlag: 5,
 });
 
-const aaIds = ['14530957', '14649486', '14720037', '14565055', '14811362', '14633028', '14316688', '14667579', '014651823', '14705966', '14568455', '14774481'];
+const aaIds = ['014787842'];
 
+const { countryCodeCache, disciplineCache } = JSON.parse(fs.readFileSync('./cache.json', 'utf-8'));
+
+let endpoint, apiKey;
 for (const aaId of aaIds) {
-  const { window } = new JSDOM(await (await fetch(`https://worldathletics.org/athletes/_/${aaId}`)).text());
-  const graphqlSrc = [...window.document.querySelectorAll('script[src]')]
-    .filter((script) => script.getAttribute('src').match(/\/_next\/static\/chunks\/[a-z0-9]{40}\.[a-z0-9]{20}\.js/))[1]
-    .getAttribute('src');
-  const graphqlJs = await (await fetch(`https://worldathletics.org${graphqlSrc}`)).text();
-  const { endpoint, apiKey } = JSON.parse(graphqlJs.match(/graphql:({.*?})/)[1].replace(/\s*(['"])?([a-z0-9A-Z_\.]+)(['"])?\s*:([^,\}]+)(,)?/g, '"$2": $4$5'));
+  if (!endpoint) {
+    const { window } = new JSDOM(await (await fetch(`https://worldathletics.org/athletes/_/${aaId}`)).text());
+    const graphqlSrc = [...window.document.querySelectorAll('script[src]')]
+      .filter((script) => script.getAttribute('src').match(/\/_next\/static\/chunks\/[a-z0-9]{40}\.[a-z0-9]{20}\.js/))[1]
+      .getAttribute('src');
+    const graphqlJs = await (await fetch(`https://worldathletics.org${graphqlSrc}`)).text();
+    ({ endpoint, apiKey } = JSON.parse(graphqlJs.match(/graphql:({.*?})/)[1].replace(/\s*(['"])?([a-z0-9A-Z_\.]+)(['"])?\s*:([^,\}]+)(,)?/g, '"$2": $4$5')));
+  }
   const { data } = await (
     await fetch(endpoint, {
       headers: { 'x-api-key': apiKey },
@@ -75,6 +85,19 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
       urlSlug
       title
       fileName
+      __typename
+    }
+    resultsByYear {
+      activeYears
+      __typename
+    }
+    personalBests {
+      results {
+        indoor
+        discipline
+        mark
+        __typename
+      }
       __typename
     }
     basicData {
@@ -104,11 +127,35 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
     })
   ).json();
   const { firstName, lastName, countryCode, birthDate, sexNameUrlSlug, iaafId } = data.competitor.basicData;
-  const qid = wbk.parse.wb.pagesTitles(await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}|${WD.P_WA_ATHLETE_ID}=${iaafId}` }))).json())[0];
+  const { activeYears } = data.competitor.resultsByYear;
+  const { results } = data.competitor.personalBests;
+  const qDisciplines = [];
+  for (const { discipline } of results) {
+    if (discipline in disciplineCache && !qDisciplines.includes(disciplineCache[discipline])) qDisciplines.push(disciplineCache[discipline]);
+    else {
+      const qDiscipline = wbk.parse.wb.pagesTitles(
+        await (await fetch(wbk.cirrusSearchPages({ search: discipline, haswbstatement: `${WD.P_INSTANCE_OF}=${WD.Q_SPORTS_DISCIPLINE}` }))).json()
+      )[0];
+      if (!qDiscipline) {
+        console.log('DISCIPLINE MISS', discipline);
+        continue;
+      }
+      disciplineCache[discipline] = qDiscipline;
+      qDisciplines.push(qDiscipline);
+    }
+  }
+  const qid = wbk.parse.wb.pagesTitles(
+    await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}|${WD.P_WA_ATHLETE_ID}=${iaafId}` }))).json()
+  )[0];
   const athName = `${firstName} ${nameFixer(lastName)}`;
-  const { name, demonym } = country.info(convertIocCode(countryCode).iso2);
-  const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
-  const qCountry = Object.keys(entities)[0];
+
+  let name, demonym;
+  let qCountry = countryCodeCache[countryCode];
+  if (!qCountry) {
+    ({ name, demonym } = country.info(convertIocCode(countryCode).iso2));
+    const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
+    qCountry = Object.keys(entities)[0];
+  }
 
   const qGivenName = wbk.parse.wb.pagesTitles(
     await (
@@ -128,6 +175,7 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
 
   const references = { [WD.P_STATED_IN]: WD.Q_WA_DB };
   const action = qid ? 'edit' : 'create';
+  fs.writeFileSync('./cache.json', JSON.stringify({ countryCodeCache, disciplineCache }), 'utf-8');
   const { entity } = await wbEdit.entity[action]({
     id: qid,
     type: 'item',
@@ -143,8 +191,13 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
       [WD.P_DATE_OF_BIRTH]: birthDate ? { value: new Date(birthDate).toISOString().split('T')[0], references } : undefined,
       [WD.P_GIVEN_NAME]: qGivenName,
       [WD.P_FAMILY_NAME]: qFamilyName,
+      [WD.P_WORK_PERIOD_START]: { value: String(Math.min(...activeYears.map(Number))), references },
+      [WD.P_SPORTS_DISCIPLINE_COMPETED_IN]: qDisciplines.map((qd) => ({
+        value: qd,
+        references,
+      })),
     },
-    reconciliation: { mode: 'merge' },
+    reconciliation: { mode: 'skip-on-value-match' },
   });
   console.log(entity);
 }
