@@ -23,6 +23,12 @@ const WD = {
   P_SPORTS_DISCIPLINE_COMPETED_IN: 'P2416',
   P_WORK_PERIOD_START: 'P2031',
   P_WORK_PERIOD_END: 'P2032',
+  P_PERSONAL_BEST: 'P2415',
+  P_POINT_IN_TIME: 'P585',
+  P_LOCATION: 'P276',
+  P_CRITERION_USED: 'P1013',
+  P_RETRIEVED: 'P813',
+  P_NATURE_OF_STATEMENT: 'P5102',
 
   Q_HUMAN: 'Q5',
   Q_ATHLETICS: 'Q542',
@@ -36,6 +42,13 @@ const WD = {
   Q_FEMALE_GIVEN_NAME: 'Q11879590',
   Q_UNISEX_GIVEN_NAME: 'Q3409032',
   Q_SPORTS_DISCIPLINE: 'Q2312410',
+  Q_INDOOR_ATHLETICS: 'Q10235779',
+  Q_SECOND: 'Q11574',
+  Q_ILLEGAL_MARK: 'Q116142274',
+};
+const references = {
+  [WD.P_STATED_IN]: WD.Q_WA_DB,
+  [WD.P_RETRIEVED]: new Date().toISOString().split('T')[0],
 };
 
 const wbk = WBK({
@@ -57,9 +70,9 @@ const wbEdit = wikibaseEdit({
   maxlag: 5,
 });
 
-const aaIds = ['14794002', '014456312', '14757263', '14628582', '14771055', '014778142', '14680006', '14743162'];
+const aaIds = ['14680006'];
 
-const { countryCodeCache, disciplineCache } = JSON.parse(fs.readFileSync('./cache.json', 'utf-8'));
+const { countryCodeCache, disciplineCache, locationCache } = JSON.parse(fs.readFileSync('./cache.json', 'utf-8'));
 
 let endpoint, apiKey;
 for (const aaId of aaIds) {
@@ -97,6 +110,9 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
         indoor
         discipline
         mark
+        notLegal
+        venue
+        date
         __typename
       }
       __typename
@@ -139,13 +155,48 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
         await (await fetch(wbk.cirrusSearchPages({ search: discipline, haswbstatement: `${WD.P_INSTANCE_OF}=${WD.Q_SPORTS_DISCIPLINE}` }))).json()
       )[0];
       if (!qDiscipline) {
-        console.log('DISCIPLINE MISS', discipline);
+        fs.appendFileSync('./misses.txt', `DISCIPLINE MISS: ${discipline}\n`, 'utf-8');
         continue;
       }
       disciplineCache[discipline] = qDiscipline;
       qDisciplines.push(qDiscipline);
     }
   }
+
+  const markToSecs = (mark) => {
+    const groups = mark.split(':');
+    if (groups.length === 1) return +mark;
+    if (groups.length === 2) return +groups[0] * 60 + +groups[1];
+    if (groups.length === 3) return +groups[0] * 60 * 60 + +groups[1] * 60 + +groups[2];
+  };
+  const personalBests = [];
+  for (const { indoor, discipline, mark, notLegal, venue, date } of results) {
+    let location = locationCache[venue];
+    if (!location) {
+      let locationSearch = venue.split('(')[0].trim();
+      if (locationSearch.indexOf(', ', locationSearch.indexOf(', ') + 1) !== -1) locationSearch = locationSearch.split(', ').slice(1).join(', ');
+      const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(locationSearch))).json();
+      location = Object.keys(entities)[0];
+      if (location == -1) {
+        fs.appendFileSync('./misses.txt', `LOCATION MISS: ${venue}\n`, 'utf-8');
+        location = undefined;
+      }
+      locationCache[venue] = location;
+    }
+    personalBests.push({
+      amount: markToSecs(mark),
+      unit: WD.Q_SECOND,
+      qualifiers: {
+        [WD.P_SPORTS_DISCIPLINE_COMPETED_IN]: disciplineCache[discipline],
+        [WD.P_POINT_IN_TIME]: new Date(date).toISOString().split('T')[0],
+        [WD.P_LOCATION]: location,
+        [WD.P_CRITERION_USED]: indoor ? WD.Q_INDOOR_ATHLETICS : undefined,
+        [WD.P_NATURE_OF_STATEMENT]: notLegal ? WD.Q_ILLEGAL_MARK : undefined,
+      },
+      references,
+    });
+  }
+
   const qid = wbk.parse.wb.pagesTitles(
     await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}|${WD.P_WA_ATHLETE_ID}=${iaafId}` }))).json()
   )[0];
@@ -174,9 +225,8 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
   const qFamilyNames = await (await fetch(wbk.cirrusSearchPages({ search: lastName, haswbstatement: `${WD.P_INSTANCE_OF}=${WD.Q_FAMILY_NAME}` }))).json();
   const qFamilyName = qFamilyNames.query.search[0]?.snippet.includes(lastName) ? wbk.parse.wb.pagesTitles(qFamilyNames)[0] : undefined;
 
-  const references = { [WD.P_STATED_IN]: WD.Q_WA_DB };
   const action = qid ? 'edit' : 'create';
-  fs.writeFileSync('./cache.json', JSON.stringify({ countryCodeCache, disciplineCache }), 'utf-8');
+  fs.writeFileSync('./cache.json', JSON.stringify({ countryCodeCache, disciplineCache, locationCache }), 'utf-8');
   const { entity } = await wbEdit.entity[action]({
     id: qid,
     type: 'item',
@@ -197,6 +247,7 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
         value: qd,
         references,
       })),
+      [WD.P_PERSONAL_BEST]: personalBests,
     },
     reconciliation: { mode: 'skip-on-value-match' },
   });
