@@ -6,6 +6,7 @@ import { convertIocCode } from 'convert-country-codes';
 import country from 'countryjs';
 import { nameFixer } from 'name-fixer';
 import fs from 'fs';
+import { exit } from 'process';
 dotenv.config();
 
 const WD = {
@@ -56,7 +57,7 @@ const wbEdit = wikibaseEdit({
   maxlag: 5,
 });
 
-const aaIds = ['014787842'];
+const aaIds = ['14794002', '014456312', '14757263', '14628582', '14771055', '014778142', '14680006', '14743162'];
 
 const { countryCodeCache, disciplineCache } = JSON.parse(fs.readFileSync('./cache.json', 'utf-8'));
 
@@ -131,8 +132,9 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
   const { results } = data.competitor.personalBests;
   const qDisciplines = [];
   for (const { discipline } of results) {
-    if (discipline in disciplineCache && !qDisciplines.includes(disciplineCache[discipline])) qDisciplines.push(disciplineCache[discipline]);
-    else {
+    if (discipline in disciplineCache) {
+      if (!qDisciplines.includes(disciplineCache[discipline])) qDisciplines.push(disciplineCache[discipline]);
+    } else {
       const qDiscipline = wbk.parse.wb.pagesTitles(
         await (await fetch(wbk.cirrusSearchPages({ search: discipline, haswbstatement: `${WD.P_INSTANCE_OF}=${WD.Q_SPORTS_DISCIPLINE}` }))).json()
       )[0];
@@ -155,23 +157,22 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
     ({ name, demonym } = country.info(convertIocCode(countryCode).iso2));
     const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
     qCountry = Object.keys(entities)[0];
+    countryCodeCache[countryCode] = qCountry;
   }
 
-  const qGivenName = wbk.parse.wb.pagesTitles(
-    await (
-      await fetch(
-        wbk.cirrusSearchPages({
-          search: firstName,
-          haswbstatement: `${[WD.Q_GIVEN_NAME, WD.Q_MALE_GIVEN_NAME, WD.Q_FEMALE_GIVEN_NAME, WD.Q_UNISEX_GIVEN_NAME]
-            .map((q) => `${WD.P_INSTANCE_OF}=${q}`)
-            .join('|')}`,
-        })
-      )
-    ).json()
-  )[0];
-  const qFamilyName = wbk.parse.wb.pagesTitles(
-    await (await fetch(wbk.cirrusSearchPages({ search: lastName, haswbstatement: `${WD.P_INSTANCE_OF}=${WD.Q_FAMILY_NAME}` }))).json()
-  )[0];
+  const qGivenNames = await (
+    await fetch(
+      wbk.cirrusSearchPages({
+        search: firstName,
+        haswbstatement: `${[WD.Q_GIVEN_NAME, WD.Q_MALE_GIVEN_NAME, WD.Q_FEMALE_GIVEN_NAME, WD.Q_UNISEX_GIVEN_NAME]
+          .map((q) => `${WD.P_INSTANCE_OF}=${q}`)
+          .join('|')}`,
+      })
+    )
+  ).json();
+  const qGivenName = qGivenNames.query.search[0]?.snippet.includes(firstName) ? wbk.parse.wb.pagesTitles(qGivenNames)[0] : undefined;
+  const qFamilyNames = await (await fetch(wbk.cirrusSearchPages({ search: lastName, haswbstatement: `${WD.P_INSTANCE_OF}=${WD.Q_FAMILY_NAME}` }))).json();
+  const qFamilyName = qFamilyNames.query.search[0]?.snippet.includes(lastName) ? wbk.parse.wb.pagesTitles(qFamilyNames)[0] : undefined;
 
   const references = { [WD.P_STATED_IN]: WD.Q_WA_DB };
   const action = qid ? 'edit' : 'create';
