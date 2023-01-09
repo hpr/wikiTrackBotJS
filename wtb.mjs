@@ -6,8 +6,9 @@ import { convertIocCode } from 'convert-country-codes';
 import country from 'countryjs';
 import { nameFixer } from 'name-fixer';
 import fs from 'fs';
-import { exit } from 'process';
 dotenv.config();
+
+const aaIds = ['14239584'];
 
 const WD = {
   P_SEX_OR_GENDER: 'P21',
@@ -69,8 +70,6 @@ const wbEdit = wikibaseEdit({
   bot: true,
   maxlag: 5,
 });
-
-const aaIds = ['14743162'];
 
 const { countryCodeCache, disciplineCache, locationCache } = JSON.parse(fs.readFileSync('./cache.json', 'utf-8'));
 
@@ -164,6 +163,7 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
   }
 
   const markToSecs = (mark) => {
+    mark = mark.replaceAll('h', '').replaceAll('+', '').replaceAll('*', '').trim();
     const groups = mark.split(':');
     let res;
     if (groups.length === 1) res = +mark;
@@ -201,7 +201,7 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
     }
     personalBests.push({
       amount: markToSecs(mark),
-      precision: mark.match(/\.\d\d$/) ? '.005' : mark.match(/\.\d/) ? '.05' : '1',
+      precision: mark.match(/\.\d\d$/) ? '.005' : mark.match(/\.\d$/) ? '.05' : '1',
       unit: WD.Q_SECOND,
       qualifiers: {
         [WD.P_SPORTS_DISCIPLINE_COMPETED_IN]: disciplineCache[discipline],
@@ -219,28 +219,33 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
   )[0];
   const athName = `${firstName} ${nameFixer(lastName)}`;
 
-  let name, demonym;
+  const { name, demonym } = country.info(convertIocCode(countryCode).iso2);
   let qCountry = countryCodeCache[countryCode];
   if (!qCountry) {
-    ({ name, demonym } = country.info(convertIocCode(countryCode).iso2));
     const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
     qCountry = Object.keys(entities)[0];
     countryCodeCache[countryCode] = qCountry;
   }
 
-  const qGivenNames = await (
-    await fetch(
-      wbk.cirrusSearchPages({
-        search: firstName,
-        haswbstatement: `${[WD.Q_GIVEN_NAME, WD.Q_MALE_GIVEN_NAME, WD.Q_FEMALE_GIVEN_NAME, WD.Q_UNISEX_GIVEN_NAME]
-          .map((q) => `${WD.P_INSTANCE_OF}=${q}`)
-          .join('|')}`,
-      })
-    )
-  ).json();
-  const qGivenName = qGivenNames.query.search[0]?.snippet.includes(firstName) ? wbk.parse.wb.pagesTitles(qGivenNames)[0] : undefined;
-  const qFamilyNames = await (await fetch(wbk.cirrusSearchPages({ search: lastName, haswbstatement: `${WD.P_INSTANCE_OF}=${WD.Q_FAMILY_NAME}` }))).json();
-  const qFamilyName = qFamilyNames.query.search[0]?.snippet.includes(lastName) ? wbk.parse.wb.pagesTitles(qFamilyNames)[0] : undefined;
+  const givenNameCandidates = wbk.parse.wb.pagesTitles(
+    await (
+      await fetch(
+        wbk.cirrusSearchPages({
+          search: firstName,
+          haswbstatement: `${[WD.Q_GIVEN_NAME, WD.Q_MALE_GIVEN_NAME, WD.Q_FEMALE_GIVEN_NAME, WD.Q_UNISEX_GIVEN_NAME]
+            .map((q) => `${WD.P_INSTANCE_OF}=${q}`)
+            .join('|')}`,
+        })
+      )
+    ).json()
+  );
+  const qGivenNames = givenNameCandidates.length ? (await (await fetch(wbk.getEntities(givenNameCandidates))).json()).entities : [];
+  const qGivenName = Object.keys(qGivenNames).find((n) => qGivenNames[n].labels.en?.value.toLowerCase() === firstName.toLowerCase());
+  const familyNameCandidates = wbk.parse.wb.pagesTitles(
+    await (await fetch(wbk.cirrusSearchPages({ search: lastName, haswbstatement: `${WD.P_INSTANCE_OF}=${WD.Q_FAMILY_NAME}` }))).json()
+  );
+  const qFamilyNames = familyNameCandidates.length ? (await (await fetch(wbk.getEntities(familyNameCandidates))).json()).entities : [];
+  const qFamilyName = Object.keys(qFamilyNames).find((n) => qFamilyNames[n].labels.en?.value.toLowerCase() === lastName.toLowerCase());
 
   const action = qid ? 'edit' : 'create';
   fs.writeFileSync('./cache.json', JSON.stringify({ countryCodeCache, disciplineCache, locationCache }), 'utf-8');
