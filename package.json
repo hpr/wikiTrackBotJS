@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node wtb.mjs"
+    "start": "node wtb.mjs",
+    "clubs": "node clubs/clubs.mjs"
   },
   "author": "",
   "license": "AGPL-3.0-only",
