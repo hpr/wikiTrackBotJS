@@ -2,8 +2,7 @@ import dotenv from 'dotenv';
 import wikibaseEdit from 'wikibase-edit';
 import WBK from 'wikibase-sdk';
 import { JSDOM } from 'jsdom';
-import { convertIocCode } from 'convert-country-codes';
-import country from 'countryjs';
+import countries from 'world-countries';
 import { nameFixer } from 'name-fixer';
 import fs from 'fs';
 import { exit } from 'process';
@@ -88,11 +87,11 @@ export async function enrich(ids) {
     const athObj = qid
       ? wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], { keepIds: true, keepQualifiers: true })
       : { claims: {} };
-    if (!aaId) aaId = athObj.claims[WD.P_WA_ATHLETE_ID][0]?.value;
+    if (!aaId) aaId = (athObj.claims[WD.P_WA_ATHLETE_ID] ?? [])[0]?.value;
     console.log(`fetching: ${aaId} ${qid}`, athObj.labels?.en);
 
     if (athObj.claims[WD.P_PERSONAL_BEST]) {
-      const hasPointsQual = athObj.claims[WD.P_PERSONAL_BEST].find(claim => WD.P_POINTS_SCORED in claim.qualifiers);
+      const hasPointsQual = athObj.claims[WD.P_PERSONAL_BEST].find((claim) => WD.P_POINTS_SCORED in claim.qualifiers);
       if (hasPointsQual) continue;
       console.log('removing old pb claims');
       const guids = athObj.claims[WD.P_PERSONAL_BEST].map((c) => c.id);
@@ -211,7 +210,9 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
           const countryCode = venue.slice(venue.indexOf('(') + 1, venue.indexOf(')'));
           let qCountry = countryCodeCache[countryCode];
           if (!qCountry) {
-            const { name } = country.info(convertIocCode(countryCode).iso2);
+            const {
+              name: { official: name },
+            } = countries.find((c) => c.cioc === countryCode);
             const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
             qCountry = Object.keys(entities)[0];
             countryCodeCache[countryCode] = qCountry;
@@ -243,7 +244,12 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
 
     const athName = `${firstName} ${nameFixer(lastName)}`;
 
-    const { name, demonym } = country.info(convertIocCode(countryCode).iso2);
+    const {
+      name: { official: name },
+      demonyms: {
+        eng: { m: demonym },
+      },
+    } = countries.find((c) => c.cioc === countryCode);
     let qCountry = countryCodeCache[countryCode];
     if (!qCountry) {
       const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
@@ -306,4 +312,8 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
     });
     // console.log(entity);
   }
+}
+
+if (process.argv.length > 2) {
+  await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
