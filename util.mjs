@@ -1,3 +1,5 @@
+import { WD } from "./constants.mjs";
+
 export const markToSecs = (mark) => {
   mark = mark.replaceAll('h', '').replaceAll('+', '').replaceAll('*', '').trim();
   const groups = mark.split(':');
@@ -39,3 +41,11 @@ export const getLocation = async (venue, locationCache, countryCodeCache) => {
   }
   return location;
 };
+
+export const getPartNames = async (wbk, qid) => {
+  const entity = wbk.simplify.entities(await (await fetch(wbk.getEntities([qid]))).json())[qid];
+  const qParts = entity.claims[WD.P_HAS_PARTS];
+  const partEntities = wbk.simplify.entities(await (await fetch(wbk.getEntities(qParts))).json());
+  const labels = Object.values(partEntities).map(obj => obj.labels.en);
+  console.log(labels);
+}

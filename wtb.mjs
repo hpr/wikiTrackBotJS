@@ -6,8 +6,8 @@ import countries from 'world-countries';
 import { nameFixer } from 'name-fixer';
 import fs from 'fs';
 import { exit } from 'process';
-import { CLUBATHS_JSON, GRAPHQL_QUERY } from './constants.mjs';
-import { getLocation, markToSecs } from './util.mjs';
+import { CLUBATHS_JSON, GRAPHQL_QUERY, WD } from './constants.mjs';
+import { getLocation, getPartNames, markToSecs } from './util.mjs';
 dotenv.config();
 
 export const wbk = WBK({
@@ -15,47 +15,8 @@ export const wbk = WBK({
   sparqlEndpoint: 'https://query.wikidata.org/sparql',
 });
 
-export const WD = {
-  P_SEX_OR_GENDER: 'P21',
-  P_INSTANCE_OF: 'P31',
-  P_OCCUPATION: 'P106',
-  P_DATE_OF_BIRTH: 'P569',
-  P_SPORT: 'P641',
-  P_WA_ATHLETE_ID: 'P1146',
-  P_COUNTRY_FOR_SPORT: 'P1532',
-  P_STATED_IN: 'P248',
-  P_FAMILY_NAME: 'P734',
-  P_GIVEN_NAME: 'P735',
-  P_SPORTS_DISCIPLINE_COMPETED_IN: 'P2416',
-  P_WORK_PERIOD_START: 'P2031',
-  P_WORK_PERIOD_END: 'P2032',
-  P_PERSONAL_BEST: 'P2415',
-  P_POINT_IN_TIME: 'P585',
-  P_LOCATION: 'P276',
-  P_CRITERION_USED: 'P1013',
-  P_RETRIEVED: 'P813',
-  P_NATURE_OF_STATEMENT: 'P5102',
-  P_POINTS_SCORED: 'P1351',
-  P_SCORE_METHOD: 'P1443',
-  P_HAS_PARTS: 'P527',
+// await getPartNames(wbk, 'Q39080746');
 
-  Q_HUMAN: 'Q5',
-  Q_ATHLETICS: 'Q542',
-  Q_MALE: 'Q6581097',
-  Q_FEMALE: 'Q6581072',
-  Q_ATHLETICS_COMPETITOR: 'Q11513337',
-  Q_WA_DB: 'Q54960205',
-  Q_FAMILY_NAME: 'Q101352',
-  Q_GIVEN_NAME: 'Q202444',
-  Q_MALE_GIVEN_NAME: 'Q12308941',
-  Q_FEMALE_GIVEN_NAME: 'Q11879590',
-  Q_UNISEX_GIVEN_NAME: 'Q3409032',
-  Q_SPORTS_DISCIPLINE: 'Q2312410',
-  Q_INDOOR_ATHLETICS: 'Q10235779',
-  Q_SECOND: 'Q11574',
-  Q_ILLEGAL_MARK: 'Q116142274',
-  Q_WA_RANKINGS: 'Q65054450',
-};
 const references = {
   [WD.P_STATED_IN]: WD.Q_WA_DB,
   [WD.P_RETRIEVED]: new Date().toISOString().split('T')[0],
