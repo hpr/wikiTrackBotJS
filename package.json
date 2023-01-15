@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node wtb.mjs",
-    "clubs": "node clubs/clubs.mjs"
+    "clubs": "node clubs/clubs.mjs",
+    "honours": "node honours/honours.mjs"
   },
   "author": "",
   "license": "AGPL-3.0-only",

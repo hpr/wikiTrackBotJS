@@ -6,6 +6,8 @@ import countries from 'world-countries';
 import { nameFixer } from 'name-fixer';
 import fs from 'fs';
 import { exit } from 'process';
+import { CLUBATHS_JSON, GRAPHQL_QUERY } from './constants.mjs';
+import { getLocation, markToSecs } from './util.mjs';
 dotenv.config();
 
 export const wbk = WBK({
@@ -76,29 +78,33 @@ export const wbEdit = wikibaseEdit({
 
 const { countryCodeCache, disciplineCache, locationCache } = JSON.parse(fs.readFileSync('./cache.json', 'utf-8'));
 
+const clubAths = JSON.parse(fs.readFileSync(CLUBATHS_JSON, 'utf-8'));
+
 let endpoint, apiKey;
 export async function enrich(ids) {
   // ids: { aaId?, qid? }[]
+  const athObjs = [];
   for (let { aaId, qid } of ids) {
+    let skip = false;
     if (!qid)
       qid = wbk.parse.wb.pagesTitles(
         await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}|${WD.P_WA_ATHLETE_ID}=${iaafId}` }))).json()
       )[0];
-    const athObj = qid
-      ? wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], { keepIds: true, keepQualifiers: true })
-      : { claims: {} };
+    const athObj =
+      clubAths[qid] ??
+      (qid ? wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], { keepIds: true, keepQualifiers: true }) : { claims: {} });
     if (!aaId) aaId = (athObj.claims[WD.P_WA_ATHLETE_ID] ?? [])[0]?.value;
-    console.log(`fetching: ${aaId} ${qid}`, athObj.labels?.en);
 
     if (athObj.claims[WD.P_PERSONAL_BEST]) {
       const hasPointsQual = athObj.claims[WD.P_PERSONAL_BEST].find((claim) => WD.P_POINTS_SCORED in claim.qualifiers);
-      if (hasPointsQual) continue;
-      console.log('removing old pb claims');
+      if (hasPointsQual) skip = true;
+      else console.log('removing old pb claims');
       const guids = athObj.claims[WD.P_PERSONAL_BEST].map((c) => c.id);
-      await wbEdit.claim.remove({ guid: guids });
+      if (!skip) await wbEdit.claim.remove({ guid: guids });
     }
+    console.log(`${skip ? 'skip' : 'fetch'}ing: ${aaId} ${qid}`, athObj.labels?.en);
 
-    if (!endpoint) {
+    if (!endpoint && !skip) {
       const { window } = new JSDOM(await (await fetch(`https://worldathletics.org/athletes/_/${aaId}`)).text());
       const graphqlSrc = [...window.document.querySelectorAll('script[src]')]
         .filter((script) => script.getAttribute('src').match(/\/_next\/static\/chunks\/[a-z0-9]{40}\.[a-z0-9]{20}\.js/))[1]
@@ -106,69 +112,24 @@ export async function enrich(ids) {
       const graphqlJs = await (await fetch(`https://worldathletics.org${graphqlSrc}`)).text();
       ({ endpoint, apiKey } = JSON.parse(graphqlJs.match(/graphql:({.*?})/)[1].replace(/\s*(['"])?([a-z0-9A-Z_\.]+)(['"])?\s*:([^,\}]+)(,)?/g, '"$2": $4$5')));
     }
-    const { data } = await (
-      await fetch(endpoint, {
-        headers: { 'x-api-key': apiKey },
-        method: 'POST',
-        body: JSON.stringify({
-          operationName: 'GetCompetitorBasicInfo',
-          variables: { id: aaId },
-          query: `
-query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
-  competitor: getSingleCompetitor(id: $id, urlSlug: $urlSlug) {
-    primaryMediaId
-    primaryMedia {
-      urlSlug
-      title
-      fileName
-      __typename
-    }
-    resultsByYear {
-      activeYears
-      __typename
-    }
-    personalBests {
-      results {
-        indoor
-        discipline
-        mark
-        notLegal
-        venue
-        date
-        resultScore
-        __typename
-      }
-      __typename
-    }
-    basicData {
-      firstName
-      lastName
-      countryName
-      countryCode
-      countryUrlSlug
-      birthDate
-      birthDateStr
-      sexNameUrlSlug
-      urlSlug
-      representativeId
-      biography
-      twitterLink
-      instagramLink
-      facebookLink
-      iaafId
-      aaId
-      __typename
-    }
-    __typename
-  }
-}
-`,
-        }),
-      })
-    ).json();
+    const { data } = skip
+      ? { data: { competitor: { basicData: {}, resultsByYear: { activeYears: [] }, honours: [], personalBests: { results: [] } } } }
+      : await (
+          await fetch(endpoint, {
+            headers: { 'x-api-key': apiKey },
+            method: 'POST',
+            body: JSON.stringify({
+              operationName: 'GetCompetitorBasicInfo',
+              variables: { id: aaId },
+              query: GRAPHQL_QUERY,
+            }),
+          })
+        ).json();
     const { firstName, lastName, countryCode, birthDate, sexNameUrlSlug, iaafId } = data.competitor.basicData;
     const { activeYears } = data.competitor.resultsByYear;
     const { results } = data.competitor.personalBests;
+    const honoursResults = data.competitor.honours.flatMap((hon) => hon.results.map((res) => ({ ...res, categoryName: hon.categoryName })));
+
     const qDisciplines = [];
     for (const { discipline } of results) {
       if (discipline in disciplineCache) {
@@ -186,45 +147,16 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
       }
     }
 
-    const markToSecs = (mark) => {
-      mark = mark.replaceAll('h', '').replaceAll('+', '').replaceAll('*', '').trim();
-      const groups = mark.split(':');
-      let res;
-      if (groups.length === 1) res = +mark;
-      if (groups.length === 2) res = +groups[0] * 60 + +groups[1];
-      if (groups.length === 3) res = +groups[0] * 60 * 60 + +groups[1] * 60 + +groups[2];
-      res = String(Math.round(res * 100) / 100);
-      if (res.includes('.')) return res.slice(0, res.lastIndexOf('.') + 3);
-      return res;
-    };
+    const participantIns = [];
+    for (const { competition, date, discipline, indoor, mark, place, venue, categoryName } of honoursResults) {
+      const location = await getLocation(venue, locationCache, countryCodeCache);
+      participantIns.push({
+        value,
+      });
+    }
     const personalBests = [];
     for (const { indoor, discipline, mark, notLegal, venue, date, resultScore } of results) {
-      let location = locationCache[venue];
-      if (!location) {
-        if (venue.includes('(USA)')) {
-          let locationSearch = venue.split('(')[0].trim();
-          if (locationSearch.indexOf(', ', locationSearch.indexOf(', ') + 1) !== -1) locationSearch = locationSearch.split(', ').slice(1).join(', ');
-          const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(locationSearch))).json();
-          location = Object.keys(entities)[0];
-        } else {
-          const countryCode = venue.slice(venue.indexOf('(') + 1, venue.indexOf(')'));
-          let qCountry = countryCodeCache[countryCode];
-          if (!qCountry) {
-            const {
-              name: { official: name },
-            } = countries.find((c) => c.cioc === countryCode);
-            const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
-            qCountry = Object.keys(entities)[0];
-            countryCodeCache[countryCode] = qCountry;
-          }
-          location = qCountry;
-        }
-        if (location == -1) {
-          fs.appendFileSync('./misses.txt', `LOCATION MISS: ${venue}\n`, 'utf-8');
-          location = undefined;
-        }
-        locationCache[venue] = location;
-      }
+      const location = await getLocation(venue, locationCache, countryCodeCache);
       personalBests.push({
         amount: markToSecs(mark),
         precision: mark.match(/\.\d\d$/) ? '.005' : mark.match(/\.\d$/) ? '.05' : '1',
@@ -242,42 +174,46 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
       });
     }
 
-    const athName = `${firstName} ${nameFixer(lastName)}`;
+    const athName = skip ? '' : `${firstName} ${nameFixer(lastName)}`;
 
     const {
       name: { official: name },
       demonyms: {
         eng: { m: demonym },
       },
-    } = countries.find((c) => c.cioc === countryCode);
+    } = countries.find((c) => c.cioc === countryCode) ?? { name: {}, demonyms: { eng: {} } };
     let qCountry = countryCodeCache[countryCode];
-    if (!qCountry) {
+    if (!qCountry && !skip) {
       const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
       qCountry = Object.keys(entities)[0];
       countryCodeCache[countryCode] = qCountry;
     }
 
-    const givenNameCandidates = athObj.claims[WD.P_GIVEN_NAME]
-      ? []
-      : wbk.parse.wb.pagesTitles(
-          await (
-            await fetch(
-              wbk.cirrusSearchPages({
-                search: firstName,
-                haswbstatement: `${[WD.Q_GIVEN_NAME, WD.Q_MALE_GIVEN_NAME, WD.Q_FEMALE_GIVEN_NAME, WD.Q_UNISEX_GIVEN_NAME]
-                  .map((q) => `${WD.P_INSTANCE_OF}=${q}`)
-                  .join('|')}`,
-              })
-            )
-          ).json()
-        );
+    const givenNameCandidates =
+      !skip &&
+      (athObj.claims[WD.P_GIVEN_NAME]
+        ? []
+        : wbk.parse.wb.pagesTitles(
+            await (
+              await fetch(
+                wbk.cirrusSearchPages({
+                  search: firstName,
+                  haswbstatement: `${[WD.Q_GIVEN_NAME, WD.Q_MALE_GIVEN_NAME, WD.Q_FEMALE_GIVEN_NAME, WD.Q_UNISEX_GIVEN_NAME]
+                    .map((q) => `${WD.P_INSTANCE_OF}=${q}`)
+                    .join('|')}`,
+                })
+              )
+            ).json()
+          ));
     const qGivenNames = givenNameCandidates.length ? (await (await fetch(wbk.getEntities(givenNameCandidates))).json()).entities : [];
     const qGivenName = Object.keys(qGivenNames).find((n) => qGivenNames[n].labels.en?.value.toLowerCase() === firstName.toLowerCase());
-    const familyNameCandidates = athObj.claims[WD.P_FAMILY_NAME]
-      ? []
-      : wbk.parse.wb.pagesTitles(
-          await (await fetch(wbk.cirrusSearchPages({ search: lastName, haswbstatement: `${WD.P_INSTANCE_OF}=${WD.Q_FAMILY_NAME}` }))).json()
-        );
+    const familyNameCandidates =
+      !skip &&
+      (athObj.claims[WD.P_FAMILY_NAME]
+        ? []
+        : wbk.parse.wb.pagesTitles(
+            await (await fetch(wbk.cirrusSearchPages({ search: lastName, haswbstatement: `${WD.P_INSTANCE_OF}=${WD.Q_FAMILY_NAME}` }))).json()
+          ));
 
     const qFamilyNames = familyNameCandidates.length ? (await (await fetch(wbk.getEntities(familyNameCandidates))).json()).entities : [];
     const qFamilyName = Object.keys(qFamilyNames).find((n) => qFamilyNames[n].labels.en?.value.toLowerCase() === lastName.toLowerCase());
@@ -285,33 +221,36 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
     const lastActiveYear = String(Math.max(...activeYears.map(Number)));
     const action = qid ? 'edit' : 'create';
     fs.writeFileSync('./cache.json', JSON.stringify({ countryCodeCache, disciplineCache, locationCache }), 'utf-8');
-    const { entity } = await wbEdit.entity[action]({
-      id: qid,
-      type: 'item',
-      labels: { en: athName },
-      descriptions: { en: `${demonym || ''} athletics competitor`.trim() },
-      claims: {
-        [WD.P_INSTANCE_OF]: WD.Q_HUMAN,
-        [WD.P_SEX_OR_GENDER]: { men: WD.Q_MALE, women: WD.Q_FEMALE }[sexNameUrlSlug],
-        [WD.P_SPORT]: WD.Q_ATHLETICS,
-        [WD.P_OCCUPATION]: WD.Q_ATHLETICS_COMPETITOR,
-        [WD.P_WA_ATHLETE_ID]: aaId,
-        [WD.P_COUNTRY_FOR_SPORT]: { value: qCountry, references },
-        [WD.P_DATE_OF_BIRTH]: birthDate ? { value: new Date(birthDate).toISOString().split('T')[0], references } : undefined,
-        [WD.P_GIVEN_NAME]: qGivenName,
-        [WD.P_FAMILY_NAME]: qFamilyName,
-        [WD.P_WORK_PERIOD_START]: { value: String(Math.min(...activeYears.map(Number))), references },
-        [WD.P_WORK_PERIOD_END]: +lastActiveYear !== new Date().getFullYear() ? { value: lastActiveYear, references } : undefined,
-        [WD.P_SPORTS_DISCIPLINE_COMPETED_IN]: qDisciplines.map((qd) => ({
-          value: qd,
-          references,
-        })),
-        [WD.P_PERSONAL_BEST]: personalBests,
-      },
-      reconciliation: { mode: 'skip-on-value-match' },
-    });
-    // console.log(entity);
+    const { entity } = skip
+      ? {}
+      : await wbEdit.entity[action]({
+          id: qid,
+          type: 'item',
+          labels: { en: athName },
+          descriptions: { en: `${demonym || ''} athletics competitor`.trim() },
+          claims: {
+            [WD.P_INSTANCE_OF]: WD.Q_HUMAN,
+            [WD.P_SEX_OR_GENDER]: { men: WD.Q_MALE, women: WD.Q_FEMALE }[sexNameUrlSlug],
+            [WD.P_SPORT]: WD.Q_ATHLETICS,
+            [WD.P_OCCUPATION]: WD.Q_ATHLETICS_COMPETITOR,
+            [WD.P_WA_ATHLETE_ID]: aaId,
+            [WD.P_COUNTRY_FOR_SPORT]: { value: qCountry, references },
+            [WD.P_DATE_OF_BIRTH]: birthDate ? { value: new Date(birthDate).toISOString().split('T')[0], references } : undefined,
+            [WD.P_GIVEN_NAME]: qGivenName,
+            [WD.P_FAMILY_NAME]: qFamilyName,
+            [WD.P_WORK_PERIOD_START]: { value: String(Math.min(...activeYears.map(Number))), references },
+            [WD.P_WORK_PERIOD_END]: { value: +lastActiveYear !== new Date().getFullYear() ? lastActiveYear : { snaktype: 'novalue' }, references },
+            [WD.P_SPORTS_DISCIPLINE_COMPETED_IN]: qDisciplines.map((qd) => ({
+              value: qd,
+              references,
+            })),
+            [WD.P_PERSONAL_BEST]: personalBests,
+          },
+          reconciliation: { mode: 'skip-on-value-match' },
+        });
+    athObjs.push(skip ? athObj : entity);
   }
+  return athObjs;
 }
 
 if (process.argv.length > 2) {
