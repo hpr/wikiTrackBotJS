@@ -1,4 +1,5 @@
-import { WD } from "./constants.mjs";
+import { WD } from './constants.mjs';
+import countries from 'world-countries';
 
 export const markToSecs = (mark) => {
   mark = mark.replaceAll('h', '').replaceAll('+', '').replaceAll('*', '').trim();
@@ -12,7 +13,7 @@ export const markToSecs = (mark) => {
   return res;
 };
 
-export const getLocation = async (venue, locationCache, countryCodeCache) => {
+export const getLocation = async (wbk, venue, locationCache, countryCodeCache) => {
   let location = locationCache[venue];
   if (!location) {
     if (venue.includes('(USA)')) {
@@ -21,7 +22,7 @@ export const getLocation = async (venue, locationCache, countryCodeCache) => {
       const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(locationSearch))).json();
       location = Object.keys(entities)[0];
     } else {
-      const countryCode = venue.slice(venue.indexOf('(') + 1, venue.indexOf(')'));
+      const countryCode = venue.slice(venue.lastIndexOf('(') + 1, venue.lastIndexOf(')'));
       let qCountry = countryCodeCache[countryCode];
       if (!qCountry) {
         const {
@@ -42,10 +43,31 @@ export const getLocation = async (venue, locationCache, countryCodeCache) => {
   return location;
 };
 
+export const getCountryCodeOfVenue = (venue) => {
+  const countryCode = venue.slice(venue.lastIndexOf('(') + 1, venue.lastIndexOf(')'));
+  return countryCode;
+}
+
 export const getPartNames = async (wbk, qid) => {
   const entity = wbk.simplify.entities(await (await fetch(wbk.getEntities([qid]))).json())[qid];
   const qParts = entity.claims[WD.P_HAS_PARTS];
   const partEntities = wbk.simplify.entities(await (await fetch(wbk.getEntities(qParts))).json());
-  const labels = Object.values(partEntities).map(obj => obj.labels.en);
+  const labels = Object.values(partEntities).map((obj) => obj.labels.en);
   console.log(labels);
-}
+};
+
+export const fetchAll = async (urls) => {
+  let result = { entities: {} };
+  for (const url of urls) {
+    result = { ...result, entities: { ...result.entities, ...(await (await fetch(url)).json()).entities } };
+  }
+  return result;
+};
+
+export const sexFromSlug = (sexNameUrlSlug, defaultValue = undefined) => {
+  return sexNameUrlSlug === 'men' ? WD.Q_MALE : sexNameUrlSlug === 'women' ? WD.Q_FEMALE : defaultValue;
+};
+
+export const getPrecision = (mark) => {
+  return mark.match(/\.\d\d$/) ? '.005' : mark.match(/\.\d$/) ? '.05' : '1';
+};

@@ -28,6 +28,10 @@ export const WD = {
   P_SCORE_METHOD: 'P1443',
   P_HAS_PARTS: 'P527',
   P_APPLIES_TO_PART: 'P518',
+  P_RANKING: 'P1352',
+  P_RACE_TIME: 'P2781',
+  P_PART_OF: 'P361',
+  P_PARTICIPANT: 'P710',
 
   Q_HUMAN: 'Q5',
   Q_ATHLETICS: 'Q542',
@@ -46,6 +50,62 @@ export const WD = {
   Q_SECOND: 'Q11574',
   Q_ILLEGAL_MARK: 'Q116142274',
   Q_WA_RANKINGS: 'Q65054450',
+  Q_SPORTING_EVENT: 'Q16510064',
+};
+
+export const honourCats = {
+  'Olympic Games': 'Q715044', // filled
+  'World Championships': 'Q182653', // filled
+  'World Indoor Championships': 'Q725169', // filled
+  'Diamond League': 'Q301839', // special case
+  'Major Marathon': 'Q282092', // need to disambiguate
+  'National Championships': 'Q116203522', // ?
+  'NCAA Championships': 'Q116202306', // empty
+  'NCAA Indoor Championships': 'Q116202343', // empty
+  'Diamond League Final': 'Q116203531',
+  'World (Continental) Cup': 'Q1161047', // empty
+  'World U20 Championships': 'Q739227', // filled
+  'African Championships': 'Q1417217', // sparse
+  'African U20 Championships': 'Q2596525', // empty
+  'European Championships': 'Q210707', // filled
+  'Commonwealth Games': 'Q2869155', // filled
+  'European Team Championships': 'Q1630626', // empty
+  'European U20 Championships': 'Q428792', // sparse
+  'National Indoor Championships': 'Q116203526', // ?
+  'World U18 Championships': 'Q975128', // needs fill
+};
+
+export const diamondComps = {
+  'Bauhaus-Galan': 'Q1154703',
+  'Lausanne Athletissima': 'Q665517',
+  'Monaco Herculis': 'Q1250640',
+  'Roma Golden Gala - Pietro Mennea': 'Q225463',
+  'Roma Golden Gala': 'Q225463', // dupe
+  "Meeting International Mohammed VI d'Athletisme de Rabat": 'Q246143',
+  'Bruxelles Memorial Van Damme': 'Q1426540',
+  'Birmingham British Athletics Grand Prix': 'Q746741',
+  'Birmingham Aviva Grand Prix': 'Q746741', // dupe
+  'Gateshead AVIVA British Grand Prix': 'Q746741', // dupe
+  'New York adidas Grand Prix': 'Q240958',
+  'Doha IAAF Diamond League': 'Q1118647',
+  'Zürich Weltklasse': 'Q661729',
+  'Stockholm DN Galan': 'Q1154703',
+  "London Sainsbury's Anniversary Games": 'Q791183',
+  'London Müller Anniversary Games': 'Q791183', // dupe
+  'Crystal Palace AVIVA London Grand Prix': 'Q791183', // dupe
+  'Paris Meeting AREVA': 'Q983696',
+  'Paris Meeting Areva': 'Q983696', // dupe
+  'Eugene Prefontaine Classic': 'Q679614',
+  'Oslo ExxonMobil Bislett Games': 'Q866398',
+  'Shanghai IAAF Diamond League Meeting': 'Q942004',
+};
+
+export const natChamps = {
+  USA: 'Q2955194',
+};
+
+export const natIndoorChamps = {
+  USA: 'Q7865815',
 };
 
 export const GRAPHQL_QUERY = `
@@ -181,4 +241,7 @@ export const SUFFIXES = [
   " – men's 20 kilometres road run",
   " – women's 20 kilometres road run",
   " – men's 20 kilometres road run",
+  " – men's octathlon",
+  " – men's sprint medley relay",
+  " – women's sprint medley relay",
 ];
