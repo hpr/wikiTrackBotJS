@@ -1,4 +1,4 @@
-import { diamondComps, honourCats, HONOURCATS_JSON, HONOURMEETS_JSON, SUFFIXDISCIPLINES_JSON, SUFFIXES, WD } from '../constants.mjs';
+import { honourCats, HONOURCATS_JSON, HONOURMEETS_JSON, SUFFIXDISCIPLINES_JSON, SUFFIXES, WD } from '../constants.mjs';
 import { wbEdit, wbk } from '../wtb.mjs';
 import fs from 'fs';
 import { exit } from 'process';
@@ -23,7 +23,7 @@ const suffixDisciplines = JSON.parse(fs.readFileSync(SUFFIXDISCIPLINES_JSON, 'ut
 const honourMeets = JSON.parse(fs.readFileSync(HONOURMEETS_JSON, 'utf-8'));
 
 for (const qCat in honourCatData) {
-  if (!Object.values(diamondComps).includes(qCat)) continue;
+  // if (!Object.values(diamondComps).includes(qCat)) continue;
   const entity = wbk.simplify.entities(await (await fetch(wbk.getEntities([qCat]))).json())[qCat];
   const qParts = entity.claims[WD.P_HAS_PARTS];
   const parts = wbk.simplify.entities(await fetchAll(wbk.getManyEntities(qParts)));

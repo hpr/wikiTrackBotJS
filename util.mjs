@@ -46,7 +46,7 @@ export const getLocation = async (wbk, venue, locationCache, countryCodeCache) =
 export const getCountryCodeOfVenue = (venue) => {
   const countryCode = venue.slice(venue.lastIndexOf('(') + 1, venue.lastIndexOf(')'));
   return countryCode;
-}
+};
 
 export const getPartNames = async (wbk, qid) => {
   const entity = wbk.simplify.entities(await (await fetch(wbk.getEntities([qid]))).json())[qid];
@@ -71,3 +71,37 @@ export const sexFromSlug = (sexNameUrlSlug, defaultValue = undefined) => {
 export const getPrecision = (mark) => {
   return mark.match(/\.\d\d$/) ? '.005' : mark.match(/\.\d$/) ? '.05' : '1';
 };
+
+export const getNatChamps = async (wbk, indoor = false) =>
+  Object.fromEntries(
+    await Promise.all(
+      (
+        await wbk.simplify.entities(await (await fetch(wbk.getEntities([indoor ? 'Q116203526' : 'Q116203522']))).json(), { keepQualifiers: true })
+      )[indoor ? 'Q116203526' : 'Q116203522'].claims[WD.P_HAS_PARTS].map(async (c) => [
+        wbk.simplify.entities(await (await fetch(wbk.getEntities(c.qualifiers.P17[0]))).json())[c.qualifiers.P17[0]].claims[WD.P_IOC_CODE],
+        c.value,
+      ])
+    )
+  );
+
+export const diminufy = (sexNameUrlSlug, categoryName) => {
+  if (['World U18 Championships', 'Youth Olympic Games'].includes(categoryName))
+    return sexNameUrlSlug === 'men' ? "boys'" : sexNameUrlSlug === 'women' ? "girls'" : '';
+  return sexNameUrlSlug === 'men' ? "men's" : sexNameUrlSlug === 'women' ? "women's" : '';
+};
+
+export const exactSearch = async (wbk, query) => {
+  const { search } = await (await fetch(wbk.searchEntities(query, 'en', 1))).json();
+  if (search[0]?.match?.text?.toLowerCase() === query.toLowerCase()) return search[0].id;
+  return undefined;
+};
+
+export const meetDateToISO = (meetDate) => meetDate.toISOString().split('T')[0];
+
+export const formatPlace = (place) => place.replaceAll('.', '').trim();
+
+export const getFullSuffix = (sexNameUrlSlug, categoryName, suffixEvt) => {
+  if (['World Cross Country Championships'].includes(categoryName)) return ` – senior ${diminufy(sexNameUrlSlug, categoryName)} race`;
+
+  return ` – ${diminufy(sexNameUrlSlug, categoryName)} ${suffixEvt}`;
+}

@@ -32,6 +32,10 @@ export const WD = {
   P_RACE_TIME: 'P2781',
   P_PART_OF: 'P361',
   P_PARTICIPANT: 'P710',
+  P_IOC_CODE: 'P984',
+  P_MAIN_CATEGORY: 'P910',
+  P_COMPETITION_CLASS: 'P2094',
+  P_PARTICIPANT_IN: 'P1344',
 
   Q_HUMAN: 'Q5',
   Q_ATHLETICS: 'Q542',
@@ -51,15 +55,13 @@ export const WD = {
   Q_ILLEGAL_MARK: 'Q116142274',
   Q_WA_RANKINGS: 'Q65054450',
   Q_SPORTING_EVENT: 'Q16510064',
+  Q_ATHLETICS_MEETING: 'Q11783626',
 };
 
 export const honourCats = {
   'Olympic Games': 'Q715044', // filled
   'World Championships': 'Q182653', // filled
   'World Indoor Championships': 'Q725169', // filled
-  'Diamond League': 'Q301839', // special case
-  'Major Marathon': 'Q282092', // need to disambiguate
-  'National Championships': 'Q116203522', // ?
   'NCAA Championships': 'Q116202306', // empty
   'NCAA Indoor Championships': 'Q116202343', // empty
   'Diamond League Final': 'Q116203531',
@@ -67,45 +69,156 @@ export const honourCats = {
   'World U20 Championships': 'Q739227', // filled
   'African Championships': 'Q1417217', // sparse
   'African U20 Championships': 'Q2596525', // empty
+  'All-African Games': undefined,
   'European Championships': 'Q210707', // filled
   'Commonwealth Games': 'Q2869155', // filled
   'European Team Championships': 'Q1630626', // empty
   'European U20 Championships': 'Q428792', // sparse
-  'National Indoor Championships': 'Q116203526', // ?
   'World U18 Championships': 'Q975128', // needs fill
-};
-
-export const diamondComps = {
-  'Bauhaus-Galan': 'Q1154703',
-  'Lausanne Athletissima': 'Q665517',
-  'Monaco Herculis': 'Q1250640',
-  'Roma Golden Gala - Pietro Mennea': 'Q225463',
-  'Roma Golden Gala': 'Q225463', // dupe
-  "Meeting International Mohammed VI d'Athletisme de Rabat": 'Q246143',
-  'Bruxelles Memorial Van Damme': 'Q1426540',
-  'Birmingham British Athletics Grand Prix': 'Q746741',
-  'Birmingham Aviva Grand Prix': 'Q746741', // dupe
-  'Gateshead AVIVA British Grand Prix': 'Q746741', // dupe
-  'New York adidas Grand Prix': 'Q240958',
-  'Doha IAAF Diamond League': 'Q1118647',
-  'Zürich Weltklasse': 'Q661729',
-  'Stockholm DN Galan': 'Q1154703',
-  "London Sainsbury's Anniversary Games": 'Q791183',
-  'London Müller Anniversary Games': 'Q791183', // dupe
-  'Crystal Palace AVIVA London Grand Prix': 'Q791183', // dupe
-  'Paris Meeting AREVA': 'Q983696',
-  'Paris Meeting Areva': 'Q983696', // dupe
-  'Eugene Prefontaine Classic': 'Q679614',
-  'Oslo ExxonMobil Bislett Games': 'Q866398',
-  'Shanghai IAAF Diamond League Meeting': 'Q942004',
-};
-
-export const natChamps = {
-  USA: 'Q2955194',
-};
-
-export const natIndoorChamps = {
-  USA: 'Q7865815',
+  'Asian Games': 'Q2629590',
+  'World Half Marathon Championships': 'Q1415179',
+  'World Cross Country Championships': 'Q1141381',
+  'Youth Olympic Games': 'Q21198340',
+  'World Athletics Final': {
+    'Thessaloniki IAAF/VTB Bank World Athletics Final': undefined,
+    'Stuttgart IAAF World Athletics Final': undefined
+  },
+  'Grand Prix Final': {
+    'Moskva IAAF Grand Prix Final': undefined,
+    'Monaco IAAF Grand Prix Final': undefined,
+  },
+  'International Marathon': {
+    'Tokyo Marathon': 'Q1191380',
+    'Fukuoka International Marathon': 'Q1473381',
+    'Amsterdam Marathon': 'Q478328',
+  },
+  'Major Marathon': {
+    _main: 'Q282092',
+    'Boston Marathon': 'Q826038',
+    'New York Marathon': 'Q752138',
+    'TCS New York Marathon': 'Q752138', // dupe
+    'Berlin Marathon': 'Q161222',
+    'BMW Berlin Marathon': 'Q161222', // dupe
+    'BMW BERLIN-MARATHON': 'Q161222', // dupe
+    'London Marathon': 'Q578794',
+    'TCS London Marathon': 'Q578794', // dupe
+    'Virgin Money London Marathon': 'Q578794', // dupe
+    'Chicago Marathon': 'Q1071822',
+  },
+  'Diamond League': {
+    _main: 'Q301839',
+    'Bauhaus-Galan': 'Q1154703',
+    'Lausanne Athletissima': 'Q665517',
+    'Monaco Herculis': 'Q1250640',
+    'Herculis EBS': 'Q1250640', // dupe
+    'Roma Golden Gala - Pietro Mennea': 'Q225463',
+    'Golden Gala - Pietro Mennea': 'Q225463', // dupe
+    'Roma Golden Gala': 'Q225463', // dupe
+    "Meeting International Mohammed VI d'Athletisme de Rabat": 'Q246143',
+    'Bruxelles Memorial Van Damme': 'Q1426540',
+    'Birmingham British Athletics Grand Prix': 'Q746741',
+    'Birmingham Aviva Grand Prix': 'Q746741', // dupe
+    'Gateshead AVIVA British Grand Prix': 'Q746741', // dupe
+    'New York adidas Grand Prix': 'Q240958',
+    'Doha IAAF Diamond League': 'Q1118647',
+    'Zürich Weltklasse': 'Q661729',
+    'Stockholm DN Galan': 'Q1154703',
+    "London Sainsbury's Anniversary Games": 'Q791183',
+    'London Müller Anniversary Games': 'Q791183', // dupe
+    'Crystal Palace AVIVA London Grand Prix': 'Q791183', // dupe
+    'Paris Meeting AREVA': 'Q983696',
+    'Paris Meeting Areva': 'Q983696', // dupe
+    'Eugene Prefontaine Classic': 'Q679614',
+    'Oslo ExxonMobil Bislett Games': 'Q866398',
+    'Shanghai IAAF Diamond League Meeting': 'Q942004',
+    'Shanghai Samsung Diamond League': 'Q942004', // dupe
+  },
+  'Golden League': {
+    _sameAs: 'Diamond League',
+  },
+  'National Indoor Championships': {
+    _type: 'country',
+    _main: 'Q116203526', // ?
+    BEL: 'Q2088526',
+    USA: 'Q7865815',
+    GBR: 'Q24993263',
+    CZE: 'Q27869523',
+    TCH: 'Q27973253',
+    NED: 'Q2930969',
+    GER: 'Q1203320',
+    EST: 'Q96377414',
+    FIN: 'Q11902817',
+    FRA: 'Q2954924',
+    GDR: 'Q66027090',
+    FRG: 'Q74109811',
+    IRL: 'Q25535322',
+    ITA: 'Q3652990',
+    LTU: 'Q6648383',
+    NOR: 'Q74173914',
+    POL: 'Q11708503',
+    POR: 'Q7232647',
+    RUS: 'Q55632127',
+    URS: 'Q52161726',
+    ESP: 'Q16541432',
+    SWE: 'Q10685395',
+    SUI: 'Q71831237',
+    TUR: 'Q17328751',
+  },
+  'National Championships': {
+    _type: 'country',
+    _main: 'Q116203522',
+    USA: 'Q2955194',
+    AND: 'Q106839576',
+    ARG: 'Q105702248',
+    AUS: 'Q3652179',
+    AUT: 'Q74111260',
+    BLR: 'Q66330372',
+    BEL: 'Q2198291',
+    BRA: 'Q10384955',
+    BUL: 'Q74110010',
+    CAN: 'Q28499005',
+    CHN: 'Q25221522',
+    CRO: 'Q108392092',
+    CUB: 'Q28225465',
+    CZE: 'Q5201742',
+    TCH: 'Q16538194',
+    EST: 'Q25519737',
+    ETH: 'Q85759704',
+    FIN: 'Q5450763',
+    FRA: 'Q2954804',
+    GER: 'Q320803',
+    GDR: 'Q55610396',
+    FRG: 'Q55637549',
+    GRE: 'Q74110549',
+    HUN: 'Q17098551',
+    IND: 'Q96382089',
+    ITA: 'Q3652986',
+    JAM: 'Q55029485',
+    JPN: 'Q11509342',
+    KEN: 'Q28223308',
+    LAT: 'Q6497315',
+    LTU: 'Q6648345',
+    NED: 'Q2537744',
+    NZL: 'Q55625060',
+    NOR: 'Q11992167',
+    PAK: 'Q108083751',
+    PAR: 'Q23784261',
+    PHI: 'Q96399080',
+    POL: 'Q11782838',
+    POR: 'Q7232671',
+    ROU: 'Q74110020',
+    RUS: 'Q4509668',
+    RSA: 'Q74110206',
+    URS: 'Q4510369',
+    ESP: 'Q5744833',
+    SWE: 'Q10685482',
+    SUI: 'Q71829391',
+    TUN: 'Q2955110',
+    TUR: 'Q74110589',
+    UKR: 'Q16794878',
+    GBR: 'Q3600404',
+    YUG: 'Q74110233',
+  },
 };
 
 export const GRAPHQL_QUERY = `

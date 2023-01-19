@@ -6,16 +6,27 @@ import countries from 'world-countries';
 import { nameFixer } from 'name-fixer';
 import fs from 'fs';
 import { exit } from 'process';
-import { CLUBATHS_JSON, diamondComps, GRAPHQL_QUERY, honourCats, HONOURMEETS_JSON, natChamps, SUFFIXDISCIPLINES_JSON, WD } from './constants.mjs';
-import { getCountryCodeOfVenue, getLocation, getPartNames, getPrecision, markToSecs, sexFromSlug } from './util.mjs';
+import { CLUBATHS_JSON, GRAPHQL_QUERY, honourCats, HONOURMEETS_JSON, SUFFIXDISCIPLINES_JSON, WD } from './constants.mjs';
+import {
+  diminufy,
+  exactSearch,
+  formatPlace,
+  getCountryCodeOfVenue,
+  getFullSuffix,
+  getLocation,
+  getNatChamps,
+  getPartNames,
+  getPrecision,
+  markToSecs,
+  meetDateToISO,
+  sexFromSlug,
+} from './util.mjs';
 dotenv.config();
 
 export const wbk = WBK({
   instance: 'https://www.wikidata.org',
   sparqlEndpoint: 'https://query.wikidata.org/sparql',
 });
-
-// await getPartNames(wbk, 'Q39080746');
 
 const references = {
   [WD.P_STATED_IN]: WD.Q_WA_DB,
@@ -37,7 +48,7 @@ export const wbEdit = wikibaseEdit({
   maxlag: 10,
 });
 
-const { countryCodeCache, disciplineCache, locationCache } = JSON.parse(fs.readFileSync('./cache.json', 'utf-8'));
+const { countryCodeCache, disciplineCache, locationCache, competitionClassCache } = JSON.parse(fs.readFileSync('./cache.json', 'utf-8'));
 
 const clubAths = JSON.parse(fs.readFileSync(CLUBATHS_JSON, 'utf-8'));
 const honourMeets = JSON.parse(fs.readFileSync(HONOURMEETS_JSON, 'utf-8'));
@@ -123,54 +134,93 @@ export async function enrich(ids) {
     console.log(honoursResults);
     for (const { competition, date, discipline, indoor, mark, place, venue, categoryName } of honoursResults) {
       let qCat = honourCats[categoryName];
-      if (categoryName === 'Diamond League') {
-        qCat = diamondComps[competition];
-        if (!qCat) {
-          console.log('no diamond league', competition, venue, date, categoryName);
-          exit();
-        }
-      } else if (categoryName === 'National Championships') { // TODO add hasparts for usa out/indoors
-        qCat = natChamps[getCountryCodeOfVenue(venue)];
-        if (!qCat) {
-          console.log('no natchamps', competition, venue, date, categoryName);
-          exit();
-        }
-      } else if (categoryName === 'National Indoor Championships') {
-        qCat = natIndoorChamps[getCountryCodeOfVenue(venue)];
-        if (!qCat) {
-          console.log('no natindoorchamps', competition, venue, date, categoryName);
-          exit();
-        }
+      if (typeof qCat === 'object') {
+        if (qCat._sameAs) qCat = honourCats[qCat._sameAs];
+        if (qCat._type === 'country') qCat = qCat[getCountryCodeOfVenue(venue)];
+        else qCat = qCat[competition];
+      }
+      if (!qCat) {
+        console.log('no qcat', competition, venue, date, categoryName);
+        exit();
       }
       const location = await getLocation(wbk, venue, locationCache, countryCodeCache);
-      const categoryEntity = wbk.simplify.entities(await (await fetch(wbk.getEntities([qCat]))).json())[qCat];
+      const suffixEvt = Object.keys(suffixDisciplines).find((sufEvt) => suffixDisciplines[sufEvt] === disciplineCache[discipline]);
+      const fullSuffix = getFullSuffix(sexNameUrlSlug, categoryName, suffixEvt);
+      let competitionClass = competitionClassCache[fullSuffix.slice(2)];
+      if (!competitionClass) {
+        competitionClass = await exactSearch(wbk, fullSuffix.slice(2));
+        competitionClassCache[fullSuffix.slice(2)] = competitionClass;
+      }
+      const honourCatEntity = wbk.simplify.entities(await (await fetch(wbk.getEntities([qCat]))).json())[qCat];
+      const qWikiCategory = honourCatEntity.claims[WD.P_MAIN_CATEGORY][0]; // todo handle non-exist
+      const wikiCategory = wbk.simplify.entities(await (await fetch(wbk.getEntities([qWikiCategory]))).json())[qWikiCategory];
       const meetDate = new Date(date);
-      const yearEvent = wbk.simplify.entity(
-        Object.values(honourMeets).find(
-          (obj) =>
-            categoryEntity.claims[WD.P_HAS_PARTS].find((part) => part.includes(obj.id)) &&
-            obj.labels.en.value.split(' ').includes(String(meetDate.getFullYear())) &&
-            !obj.labels.en.value.includes('–')
-        ),
-        { keepQualifiers: true }
-      );
-      console.log(yearEvent.labels.en);
-      // TODO create yearevent if does not exist
-      yearEvent.claims[WD.P_HAS_PARTS] ??= [];
-      let qDisciplineAtEvent = yearEvent.claims[WD.P_HAS_PARTS].find(
-        ({ qualifiers }) =>
-          (qualifiers[WD.P_SPORTS_DISCIPLINE_COMPETED_IN] ?? []).includes(disciplineCache[discipline]) &&
-          (qualifiers[WD.P_SEX_OR_GENDER] ?? []).includes(sexFromSlug(sexNameUrlSlug, 'unknown'))
-      );
-      if (!qDisciplineAtEvent) {
-        // const qPartsWithoutDisciplineQualifiers = yearEvent.claims[WD.P_HAS_PARTS]
-        //   .filter(({ qualifiers }) => !qualifiers[WD.P_SPORTS_DISCIPLINE_COMPETED_IN] || !qualifiers[WD.P_SEX_OR_GENDER])
-        //   .map(({ value }) => value);
-        const suffixEvt = Object.keys(suffixDisciplines).find((sufEvt) => suffixDisciplines[sufEvt] === disciplineCache[discipline]);
+      const year = String(meetDate.getFullYear());
+
+      let yearEvent;
+
+      const qYearEvent = await exactSearch(wbk, `${year} ${honourCatEntity.labels.en}`);
+      if (qYearEvent) yearEvent = wbk.simplify.entities(await (await fetch(wbk.getEntities(qYearEvent))).json())[qYearEvent];
+      else {
+        for (const lang in wikiCategory.sitelinks) {
+          const {
+            query: { categorymembers },
+          } = await (
+            await fetch(
+              `https://${lang.replace('wiki', '')}.wikipedia.org/w/api.php?` +
+                new URLSearchParams({
+                  action: 'query',
+                  list: 'categorymembers',
+                  cmlimit: 500,
+                  cmnamespace: '0',
+                  format: 'json',
+                  cmtitle: wikiCategory.sitelinks[lang],
+                })
+            )
+          ).json();
+          const yearTitle = categorymembers.find(({ title }) => title.includes(year))?.title;
+          if (yearTitle) {
+            yearEvent = Object.values(wbk.simplify.entities(await (await fetch(wbk.getEntitiesFromSitelinks(yearTitle, lang))).json()))[0];
+            break;
+          }
+        }
+      }
+
+      if (!yearEvent) {
         const { entity } = await wbEdit.entity.create({
           type: 'item',
           labels: {
-            en: `${yearEvent.labels.en} – ${sexNameUrlSlug}'s ${suffixEvt}`,
+            en: `${year} ${honourCatEntity.labels.en}`,
+          },
+          descriptions: {
+            en: `${year} edition of the ${honourCatEntity.labels.en} athletics meeting`,
+          },
+          claims: {
+            [WD.P_INSTANCE_OF]: WD.Q_ATHLETICS_MEETING,
+            [WD.P_PART_OF]: honourCatEntity.id,
+            [WD.P_SPORT]: WD.Q_ATHLETICS,
+            [WD.P_POINT_IN_TIME]: meetDateToISO(meetDate),
+            [WD.P_PARTICIPANT]: athObj.id,
+          },
+        });
+        await wbEdit.entity.edit({
+          type: 'item',
+          id: honourCatEntity.id,
+          claims: { [WD.P_HAS_PARTS]: { value: entity.id, qualifiers: { [WD.P_POINT_IN_TIME]: meetDateToISO(meetDate) } } },
+          reconciliation: { mode: 'merge' },
+        });
+        yearEvent = wbk.simplify.entity(entity);
+      }
+
+      console.log(yearEvent.labels.en);
+      yearEvent.claims[WD.P_HAS_PARTS] ??= [];
+      // exact match
+      let qDisciplineAtEvent = await exactSearch(wbk, `${yearEvent.labels.en}${fullSuffix}`);
+      if (!qDisciplineAtEvent) {
+        const { entity } = await wbEdit.entity.create({
+          type: 'item',
+          labels: {
+            en: `${yearEvent.labels.en}${fullSuffix}`,
           },
           descriptions: {
             en: `race at athletics meeting`, // TODO: fix for field events
@@ -178,41 +228,36 @@ export async function enrich(ids) {
           claims: {
             [WD.P_INSTANCE_OF]: WD.Q_SPORTING_EVENT,
             [WD.P_PART_OF]: yearEvent.id,
-            [WD.P_SPORT]: [
-              WD.Q_ATHLETICS,
-              {
-                value: disciplineCache[discipline],
-                qualifiers: {
-                  [WD.P_SEX_OR_GENDER]: sexFromSlug(sexNameUrlSlug),
-                },
-              },
-            ],
-            [WD.P_POINT_IN_TIME]: meetDate.toISOString().split('T')[0],
-            [WD.P_PARTICIPANT]: athObj.id,
-          },
-        });
-        qDisciplineAtEvent = entity.id;
-        const { entity: honourMeetEntity } = await wbEdit.entity.edit({
-          type: 'item',
-          id: yearEvent.id,
-          claims: {
-            [WD.P_HAS_PARTS]: {
-              value: entity.id,
+            [WD.P_SPORT]: WD.Q_ATHLETICS,
+            [WD.P_COMPETITION_CLASS]: competitionClass,
+            [WD.P_POINT_IN_TIME]: meetDateToISO(meetDate),
+            [WD.P_PARTICIPANT]: {
+              value: athObj.id,
               qualifiers: {
-                [WD.P_SPORTS_DISCIPLINE_COMPETED_IN]: disciplineCache[discipline],
-                [WD.P_SEX_OR_GENDER]: sexFromSlug(sexNameUrlSlug),
+                [WD.P_RANKING]: formatPlace(place),
+                [WD.P_RACE_TIME]: { amount: markToSecs(mark), precision: getPrecision(mark), unit: WD.Q_SECOND },
               },
             },
           },
-          reconciliation: { mode: 'merge' },
         });
-        honourMeets[honourMeetEntity.id] = honourMeetEntity;
-        fs.writeFileSync(HONOURMEETS_JSON, JSON.stringify(honourMeets), 'utf-8');
+        qDisciplineAtEvent = entity.id;
       }
+      await wbEdit.entity.edit({
+        type: 'item',
+        id: yearEvent.id,
+        claims: {
+          [WD.P_HAS_PARTS]: {
+            value: qDisciplineAtEvent,
+            qualifiers: { [WD.P_COMPETITION_CLASS]: competitionClass, [WD.P_POINT_IN_TIME]: meetDateToISO(meetDate) },
+          },
+        },
+        reconciliation: { mode: 'merge' },
+      });
       participantIns.push({
         value: qDisciplineAtEvent,
         qualifiers: {
-          [WD.P_RANKING]: place.replaceAll('.', '').trim(),
+          [WD.P_RANKING]: formatPlace(place),
+          [WD.P_COMPETITION_CLASS]: competitionClass,
           [WD.P_RACE_TIME]: { amount: markToSecs(mark), precision: getPrecision(mark), unit: WD.Q_SECOND }, // TODO fix for field events
           [WD.P_LOCATION]: location,
         },
@@ -238,7 +283,7 @@ export async function enrich(ids) {
       });
     }
 
-    const athName = skip ? '' : `${firstName} ${nameFixer(lastName)}`;
+    const athName = `${firstName} ${nameFixer(lastName)}`;
 
     const {
       name: { official: name },
@@ -284,7 +329,7 @@ export async function enrich(ids) {
 
     const lastActiveYear = String(Math.max(...activeYears.map(Number)));
     const action = qid ? 'edit' : 'create';
-    fs.writeFileSync('./cache.json', JSON.stringify({ countryCodeCache, disciplineCache, locationCache }), 'utf-8');
+    fs.writeFileSync('./cache.json', JSON.stringify({ countryCodeCache, disciplineCache, locationCache, competitionClassCache }), 'utf-8');
     const { entity } = skip
       ? {}
       : await wbEdit.entity[action]({
@@ -309,6 +354,7 @@ export async function enrich(ids) {
               references,
             })),
             [WD.P_PERSONAL_BEST]: personalBests,
+            [WD.P_PARTICIPANT_IN]: participantIns,
           },
           reconciliation: { mode: 'skip-on-value-match' },
         });
