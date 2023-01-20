@@ -67,15 +67,19 @@ export async function enrich(ids) {
   for (let { aaId, qid } of ids) {
     let skip = false;
 
-    if (!endpoint) {
-      const { window } = new JSDOM(await (await fetch(`https://worldathletics.org/athletes/_/${aaId}`)).text());
-      const graphqlSrc = [...window.document.querySelectorAll('script[src]')]
-        .filter((script) => script.getAttribute('src').match(/\/_next\/static\/chunks\/[a-z0-9]{40}\.[a-z0-9]{20}\.js/))[1]
-        .getAttribute('src');
-      const graphqlJs = await (await fetch(`https://worldathletics.org${graphqlSrc}`)).text();
-      ({ endpoint, apiKey } = JSON.parse(graphqlJs.match(/graphql:({.*?})/)[1].replace(/\s*(['"])?([a-z0-9A-Z_\.]+)(['"])?\s*:([^,\}]+)(,)?/g, '"$2": $4$5')));
-    }
+    // if (!endpoint) {
+    const { window } = new JSDOM(await (await fetch(`https://worldathletics.org/athletes/_/${aaId}`)).text());
+    const newId = window.document.querySelector('meta[name=url]').getAttribute('content').split('/').at(-1).split('-').at(-1);
+    console.log({ newId })
+    if (newId && newId !== aaId && newId.match(/^\d+$/)) aaId = newId;
+    const graphqlSrc = [...window.document.querySelectorAll('script[src]')]
+      .filter((script) => script.getAttribute('src').match(/\/_next\/static\/chunks\/[a-z0-9]{40}\.[a-z0-9]{20}\.js/))[1]
+      .getAttribute('src');
+    const graphqlJs = await (await fetch(`https://worldathletics.org${graphqlSrc}`)).text();
+    ({ endpoint, apiKey } = JSON.parse(graphqlJs.match(/graphql:({.*?})/)[1].replace(/\s*(['"])?([a-z0-9A-Z_\.]+)(['"])?\s*:([^,\}]+)(,)?/g, '"$2": $4$5')));
+    // }
 
+    console.log(aaId);
     const { data } = skip
       ? { data: { competitor: { basicData: {}, resultsByYear: { activeYears: [] }, honours: [], personalBests: { results: [] } } } }
       : await (
@@ -102,8 +106,7 @@ export async function enrich(ids) {
 
     if (athObj.claims[WD.P_PERSONAL_BEST]) {
       const hasPointsQual = athObj.claims[WD.P_PERSONAL_BEST].find((claim) => WD.P_POINTS_SCORED in claim.qualifiers);
-      if (hasPointsQual) skip = true;
-      else console.log('removing old pb claims');
+      console.log('removing old pb claims');
       const guids = athObj.claims[WD.P_PERSONAL_BEST].map((c) => c.id);
       if (!skip) await wbEdit.claim.remove({ guid: guids });
     }
@@ -354,7 +357,7 @@ export async function enrich(ids) {
             [WD.P_SEX_OR_GENDER]: { men: WD.Q_MALE, women: WD.Q_FEMALE }[sexNameUrlSlug],
             [WD.P_SPORT]: WD.Q_ATHLETICS,
             [WD.P_OCCUPATION]: WD.Q_ATHLETICS_COMPETITOR,
-            [WD.P_WA_ATHLETE_ID]: aaId,
+            [WD.P_WA_ATHLETE_ID]: newId,
             [WD.P_COUNTRY_FOR_SPORT]: { value: qCountry, references },
             [WD.P_DATE_OF_BIRTH]: birthDate ? { value: new Date(birthDate).toISOString().split('T')[0], references } : undefined,
             [WD.P_GIVEN_NAME]: qGivenName,
@@ -368,7 +371,7 @@ export async function enrich(ids) {
             [WD.P_PERSONAL_BEST]: personalBests,
             [WD.P_PARTICIPANT_IN]: participantIns,
           },
-          reconciliation: { mode: 'skip-on-value-match' },
+          reconciliation: { mode: 'merge' },
         });
     athObjs.push(skip ? athObj : entity);
   }
