@@ -64,7 +64,9 @@ export const honourCats = {
   'World Indoor Championships': 'Q725169', // filled
   'NCAA Championships': 'Q116202306', // empty
   'NCAA Indoor Championships': 'Q116202343', // empty
-  'Diamond League Final': 'Q116203531',
+  'Diamond League Final': {
+    _sameAs: 'Diamond League',
+  },
   'World (Continental) Cup': 'Q1161047', // empty
   'World U20 Championships': 'Q739227', // filled
   'African Championships': 'Q1417217', // sparse
@@ -81,7 +83,7 @@ export const honourCats = {
   'Youth Olympic Games': 'Q21198340',
   'World Athletics Final': {
     'Thessaloniki IAAF/VTB Bank World Athletics Final': undefined,
-    'Stuttgart IAAF World Athletics Final': undefined
+    'Stuttgart IAAF World Athletics Final': undefined,
   },
   'Grand Prix Final': {
     'Moskva IAAF Grand Prix Final': undefined,
@@ -107,8 +109,24 @@ export const honourCats = {
   },
   'Diamond League': {
     _main: 'Q301839',
-    'Bauhaus-Galan': 'Q1154703',
-    'Lausanne Athletissima': 'Q665517',
+    _includes: {
+      galan: 'Q1154703',
+      athletissima: 'Q665517',
+      herculis: 'Q1250640',
+      'golden gala': 'Q225463',
+      rabat: 'Q246143',
+      'van damme': 'Q1426540',
+      birmingham: 'Q746741',
+      doha: 'Q1118647',
+      weltklasse: 'Q661729',
+      london: 'Q791183',
+      paris: 'Q983696',
+      prefontaine: 'Q679614',
+      bislett: 'Q866398',
+      shanghai: 'Q942004',
+    },
+    Athletissima: 'Q665517',
+    'Lausanne Athletissima': 'Q665517', // dupe
     'Monaco Herculis': 'Q1250640',
     'Herculis EBS': 'Q1250640', // dupe
     'Roma Golden Gala - Pietro Mennea': 'Q225463',
@@ -123,14 +141,18 @@ export const honourCats = {
     'Doha IAAF Diamond League': 'Q1118647',
     'Zürich Weltklasse': 'Q661729',
     'Stockholm DN Galan': 'Q1154703',
+    'Bauhaus-Galan': 'Q1154703', // dupe
     "London Sainsbury's Anniversary Games": 'Q791183',
     'London Müller Anniversary Games': 'Q791183', // dupe
     'Crystal Palace AVIVA London Grand Prix': 'Q791183', // dupe
-    'Paris Meeting AREVA': 'Q983696',
+    'Paris Meeting': 'Q983696',
+    'Paris Meeting AREVA': 'Q983696', // dupe
     'Paris Meeting Areva': 'Q983696', // dupe
     'Eugene Prefontaine Classic': 'Q679614',
-    'Oslo ExxonMobil Bislett Games': 'Q866398',
+    'Bislett Games': 'Q866398',
+    'Oslo ExxonMobil Bislett Games': 'Q866398', // dupe
     'Shanghai IAAF Diamond League Meeting': 'Q942004',
+    'IAAF Diamond League': 'Q942004', // dupe glitch
     'Shanghai Samsung Diamond League': 'Q942004', // dupe
   },
   'Golden League': {

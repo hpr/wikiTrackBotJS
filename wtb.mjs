@@ -136,8 +136,17 @@ export async function enrich(ids) {
       let qCat = honourCats[categoryName];
       if (typeof qCat === 'object') {
         if (qCat._sameAs) qCat = honourCats[qCat._sameAs];
-        if (qCat._type === 'country') qCat = qCat[getCountryCodeOfVenue(venue)];
-        else qCat = qCat[competition];
+        let key = competition;
+        if (qCat._type === 'country') key = getCountryCodeOfVenue(venue);
+        let found = false;
+        for (const substr in qCat._includes) {
+          if (key.toLowerCase().includes(substr)) {
+            qCat = qCat._includes[key.toLowerCase()];
+            found = true;
+            break;
+          }
+        }
+        if (!found) qCat = qCat[key];
       }
       if (!qCat) {
         console.log('no qcat', competition, venue, date, categoryName);
@@ -146,10 +155,10 @@ export async function enrich(ids) {
       const location = await getLocation(wbk, venue, locationCache, countryCodeCache);
       const suffixEvt = Object.keys(suffixDisciplines).find((sufEvt) => suffixDisciplines[sufEvt] === disciplineCache[discipline]);
       const fullSuffix = getFullSuffix(sexNameUrlSlug, categoryName, suffixEvt);
-      let competitionClass = competitionClassCache[fullSuffix.slice(2)];
+      let competitionClass = competitionClassCache[fullSuffix.slice(3)];
       if (!competitionClass) {
-        competitionClass = await exactSearch(wbk, fullSuffix.slice(2));
-        competitionClassCache[fullSuffix.slice(2)] = competitionClass;
+        competitionClass = await exactSearch(wbk, fullSuffix.slice(3));
+        competitionClassCache[fullSuffix.slice(3)] = competitionClass;
       }
       const honourCatEntity = wbk.simplify.entities(await (await fetch(wbk.getEntities([qCat]))).json())[qCat];
       const qWikiCategory = honourCatEntity.claims[WD.P_MAIN_CATEGORY][0]; // todo handle non-exist
@@ -163,21 +172,24 @@ export async function enrich(ids) {
       if (qYearEvent) yearEvent = wbk.simplify.entities(await (await fetch(wbk.getEntities(qYearEvent))).json())[qYearEvent];
       else {
         for (const lang in wikiCategory.sitelinks) {
-          const {
-            query: { categorymembers },
-          } = await (
-            await fetch(
-              `https://${lang.replace('wiki', '')}.wikipedia.org/w/api.php?` +
-                new URLSearchParams({
-                  action: 'query',
-                  list: 'categorymembers',
-                  cmlimit: 500,
-                  cmnamespace: '0',
-                  format: 'json',
-                  cmtitle: wikiCategory.sitelinks[lang],
-                })
-            )
-          ).json();
+          let categorymembers = [];
+          try {
+            ({
+              query: { categorymembers },
+            } = await (
+              await fetch(
+                `https://${lang.replace('wiki', '')}.wikipedia.org/w/api.php?` +
+                  new URLSearchParams({
+                    action: 'query',
+                    list: 'categorymembers',
+                    cmlimit: 500,
+                    cmnamespace: '0',
+                    format: 'json',
+                    cmtitle: wikiCategory.sitelinks[lang],
+                  })
+              )
+            ).json());
+          } catch {}
           const yearTitle = categorymembers.find(({ title }) => title.includes(year))?.title;
           if (yearTitle) {
             yearEvent = Object.values(wbk.simplify.entities(await (await fetch(wbk.getEntitiesFromSitelinks(yearTitle, lang))).json()))[0];
@@ -257,7 +269,7 @@ export async function enrich(ids) {
         value: qDisciplineAtEvent,
         qualifiers: {
           [WD.P_RANKING]: formatPlace(place),
-          [WD.P_COMPETITION_CLASS]: competitionClass,
+          // [WD.P_COMPETITION_CLASS]: competitionClass, // not allowed per constraint
           [WD.P_RACE_TIME]: { amount: markToSecs(mark), precision: getPrecision(mark), unit: WD.Q_SECOND }, // TODO fix for field events
           [WD.P_LOCATION]: location,
         },
