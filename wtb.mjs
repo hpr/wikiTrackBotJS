@@ -70,7 +70,7 @@ export async function enrich(ids) {
     // if (!endpoint) {
     const { window } = new JSDOM(await (await fetch(`https://worldathletics.org/athletes/_/${aaId}`)).text());
     const newId = window.document.querySelector('meta[name=url]').getAttribute('content').split('/').at(-1).split('-').at(-1);
-    console.log({ newId })
+    console.log({ newId });
     if (newId && newId !== aaId && newId.match(/^\d+$/)) aaId = newId;
     const graphqlSrc = [...window.document.querySelectorAll('script[src]')]
       .filter((script) => script.getAttribute('src').match(/\/_next\/static\/chunks\/[a-z0-9]{40}\.[a-z0-9]{20}\.js/))[1]
@@ -100,8 +100,8 @@ export async function enrich(ids) {
         await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}|${WD.P_WA_ATHLETE_ID}=${iaafId}` }))).json()
       )[0];
     const athObj =
-      clubAths[qid] ??
-      (qid ? wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], { keepIds: true, keepQualifiers: true }) : { claims: {} });
+      // clubAths[qid] ??
+      qid ? wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], { keepIds: true, keepQualifiers: true }) : { claims: {} };
     if (!aaId) aaId = (athObj.claims[WD.P_WA_ATHLETE_ID] ?? [])[0]?.value;
 
     if (athObj.claims[WD.P_PERSONAL_BEST]) {
@@ -156,6 +156,8 @@ export async function enrich(ids) {
         exit();
       }
       const location = await getLocation(wbk, venue, locationCache, countryCodeCache);
+      const meetDate = new Date(date);
+      const year = String(meetDate.getFullYear());
       const suffixEvt = Object.keys(suffixDisciplines).find((sufEvt) => suffixDisciplines[sufEvt] === disciplineCache[discipline]);
       const fullSuffix = getFullSuffix(sexNameUrlSlug, categoryName, suffixEvt);
       let competitionClass = competitionClassCache[fullSuffix.slice(3)];
@@ -163,40 +165,40 @@ export async function enrich(ids) {
         competitionClass = await exactSearch(wbk, fullSuffix.slice(3));
         competitionClassCache[fullSuffix.slice(3)] = competitionClass;
       }
-      const honourCatEntity = wbk.simplify.entities(await (await fetch(wbk.getEntities([qCat]))).json())[qCat];
-      const qWikiCategory = honourCatEntity.claims[WD.P_MAIN_CATEGORY][0]; // todo handle non-exist
-      const wikiCategory = wbk.simplify.entities(await (await fetch(wbk.getEntities([qWikiCategory]))).json())[qWikiCategory];
-      const meetDate = new Date(date);
-      const year = String(meetDate.getFullYear());
-
       let yearEvent;
 
-      const qYearEvent = await exactSearch(wbk, `${year} ${honourCatEntity.labels.en}`);
-      if (qYearEvent) yearEvent = wbk.simplify.entities(await (await fetch(wbk.getEntities(qYearEvent))).json())[qYearEvent];
-      else {
-        for (const lang in wikiCategory.sitelinks) {
-          let categorymembers = [];
-          try {
-            ({
-              query: { categorymembers },
-            } = await (
-              await fetch(
-                `https://${lang.replace('wiki', '')}.wikipedia.org/w/api.php?` +
-                  new URLSearchParams({
-                    action: 'query',
-                    list: 'categorymembers',
-                    cmlimit: 500,
-                    cmnamespace: '0',
-                    format: 'json',
-                    cmtitle: wikiCategory.sitelinks[lang],
-                  })
-              )
-            ).json());
-          } catch {}
-          const yearTitle = categorymembers.find(({ title }) => title.includes(year))?.title;
-          if (yearTitle) {
-            yearEvent = Object.values(wbk.simplify.entities(await (await fetch(wbk.getEntitiesFromSitelinks(yearTitle, lang))).json()))[0];
-            break;
+      const honourCatEntity = wbk.simplify.entities(await (await fetch(wbk.getEntities([qCat]))).json())[qCat];
+      honourCatEntity.claims[WD.P_MAIN_CATEGORY] ??= [];
+      const qWikiCategory = honourCatEntity.claims[WD.P_MAIN_CATEGORY][0]; // todo handle non-exist
+      if (qWikiCategory) {
+        const wikiCategory = wbk.simplify.entities(await (await fetch(wbk.getEntities([qWikiCategory]))).json())[qWikiCategory];
+        const qYearEvent = await exactSearch(wbk, `${year} ${honourCatEntity.labels.en}`);
+        if (qYearEvent) yearEvent = wbk.simplify.entities(await (await fetch(wbk.getEntities(qYearEvent))).json())[qYearEvent];
+        else {
+          for (const lang in wikiCategory.sitelinks) {
+            let categorymembers = [];
+            try {
+              ({
+                query: { categorymembers },
+              } = await (
+                await fetch(
+                  `https://${lang.replace('wiki', '')}.wikipedia.org/w/api.php?` +
+                    new URLSearchParams({
+                      action: 'query',
+                      list: 'categorymembers',
+                      cmlimit: 500,
+                      cmnamespace: '0',
+                      format: 'json',
+                      cmtitle: wikiCategory.sitelinks[lang],
+                    })
+                )
+              ).json());
+            } catch {}
+            const yearTitle = categorymembers.find(({ title }) => title.includes(year))?.title;
+            if (yearTitle) {
+              yearEvent = Object.values(wbk.simplify.entities(await (await fetch(wbk.getEntitiesFromSitelinks(yearTitle, lang))).json()))[0];
+              break;
+            }
           }
         }
       }
@@ -276,6 +278,7 @@ export async function enrich(ids) {
           [WD.P_RACE_TIME]: { amount: markToSecs(mark), precision: getPrecision(mark), unit: WD.Q_SECOND }, // TODO fix for field events
           [WD.P_LOCATION]: location,
         },
+        references,
       });
     }
     const personalBests = [];

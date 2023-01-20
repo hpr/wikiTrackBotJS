@@ -81,6 +81,7 @@ export const honourCats = {
   'World Half Marathon Championships': 'Q1415179',
   'World Cross Country Championships': 'Q1141381',
   'Youth Olympic Games': 'Q21198340',
+  'Pan American Games': 'Q2869223',
   'World Athletics Final': {
     'Thessaloniki IAAF/VTB Bank World Athletics Final': undefined,
     'Stuttgart IAAF World Athletics Final': undefined,
