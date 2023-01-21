@@ -71,8 +71,13 @@ export const honourCats = {
   'World U20 Championships': 'Q739227', // filled
   'African Championships': 'Q1417217', // sparse
   'African U20 Championships': 'Q2596525', // empty
-  'All-African Games': undefined,
+  'All-African Games': 'Q2869095',
   'European Championships': 'Q210707', // filled
+  'European Indoor Championships': 'Q772787',
+  'European Cup 10,000m': 'Q2202034',
+  'European U23 Championships': 'Q2297714',
+  'NACAC Championships': 'Q778559',
+  'NACAC U23 Championships': 'Q6952135',
   'Commonwealth Games': 'Q2869155', // filled
   'European Team Championships': 'Q1630626', // empty
   'European U20 Championships': 'Q428792', // sparse
@@ -82,23 +87,19 @@ export const honourCats = {
   'World Cross Country Championships': 'Q1141381',
   'Youth Olympic Games': 'Q21198340',
   'Pan American Games': 'Q2869223',
-  'World Athletics Final': {
-    'Thessaloniki IAAF/VTB Bank World Athletics Final': undefined,
-    'Stuttgart IAAF World Athletics Final': undefined,
-  },
-  'Grand Prix Final': {
-    'Moskva IAAF Grand Prix Final': undefined,
-    'Monaco IAAF Grand Prix Final': undefined,
-  },
+  'World Athletics Final': 'Q1471412',
+  'Grand Prix Final': 'Q1585186',
   'International Marathon': {
     'Tokyo Marathon': 'Q1191380',
     'Fukuoka International Marathon': 'Q1473381',
     'Amsterdam Marathon': 'Q478328',
+    'Rotterdam Half Marathon': 'Q1704499', // glitch
   },
   'Major Marathon': {
     _main: 'Q282092',
     'Boston Marathon': 'Q826038',
     'New York Marathon': 'Q752138',
+    'New York City Marathon': 'Q752138', // dupe
     'TCS New York Marathon': 'Q752138', // dupe
     'Berlin Marathon': 'Q161222',
     'BMW Berlin Marathon': 'Q161222', // dupe
@@ -190,7 +191,10 @@ export const honourCats = {
   'National Championships': {
     _type: 'country',
     _main: 'Q116203522',
-    USA: 'Q2955194',
+    USA: {
+      Marathon: 'Q17514151',
+      _default: 'Q2955194',
+    },
     AND: 'Q106839576',
     ARG: 'Q105702248',
     AUS: 'Q3652179',

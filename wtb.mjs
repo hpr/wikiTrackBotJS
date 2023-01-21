@@ -150,6 +150,7 @@ export async function enrich(ids) {
           }
         }
         if (!found) qCat = qCat[key];
+        if (typeof qCat === 'object') qCat = qCat[discipline] ?? qCat._default;
       }
       if (!qCat) {
         console.log('no qcat', competition, venue, date, categoryName);
