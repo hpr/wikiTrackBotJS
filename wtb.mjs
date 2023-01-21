@@ -244,6 +244,21 @@ export async function enrich(ids) {
 
       console.log(yearEvent.labels.en);
       yearEvent.claims[WD.P_HAS_PARTS] ??= [];
+
+      const disciplineAtEventClaims = {
+        [WD.P_INSTANCE_OF]: WD.Q_SPORTING_EVENT,
+        [WD.P_PART_OF]: yearEvent.id,
+        [WD.P_SPORT]: WD.Q_ATHLETICS,
+        [WD.P_COMPETITION_CLASS]: competitionClass,
+        [WD.P_POINT_IN_TIME]: meetDateToISO(meetDate),
+        [WD.P_PARTICIPANT]: {
+          value: athObj.id,
+          qualifiers: {
+            [WD.P_RANKING]: formatPlace(place),
+            [WD.P_RACE_TIME]: { amount: markToSecs(mark), precision: getPrecision(mark), unit: WD.Q_SECOND },
+          },
+        },
+      };
       // exact match
       let qDisciplineAtEvent = await exactSearch(wbk, `${yearEvent.labels.en}${fullSuffix}`);
       if (!qDisciplineAtEvent) {
@@ -255,22 +270,15 @@ export async function enrich(ids) {
           descriptions: {
             en: `race at athletics meeting`, // TODO: fix for field events
           },
-          claims: {
-            [WD.P_INSTANCE_OF]: WD.Q_SPORTING_EVENT,
-            [WD.P_PART_OF]: yearEvent.id,
-            [WD.P_SPORT]: WD.Q_ATHLETICS,
-            [WD.P_COMPETITION_CLASS]: competitionClass,
-            [WD.P_POINT_IN_TIME]: meetDateToISO(meetDate),
-            [WD.P_PARTICIPANT]: {
-              value: athObj.id,
-              qualifiers: {
-                [WD.P_RANKING]: formatPlace(place),
-                [WD.P_RACE_TIME]: { amount: markToSecs(mark), precision: getPrecision(mark), unit: WD.Q_SECOND },
-              },
-            },
-          },
+          claims: disciplineAtEventClaims,
         });
         qDisciplineAtEvent = entity.id;
+      } else {
+        await wbEdit.entity.edit({
+          type: 'item',
+          id: qDisciplineAtEvent,
+          claims: disciplineAtEventClaims,
+        });
       }
       await wbEdit.entity.edit({
         type: 'item',
