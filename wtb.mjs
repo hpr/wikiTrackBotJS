@@ -68,6 +68,7 @@ export async function enrich(ids) {
     let athObj,
       endpoint,
       apiKey,
+      oldId,
       skip = false;
     if (qid && !aaId) {
       athObj = wbk.simplify.entities(await (await fetch(wbk.getEntities(qid))).json(), { keepIds: true, keepQualifiers: true })[qid];
@@ -78,7 +79,10 @@ export async function enrich(ids) {
     const { window } = new JSDOM(await (await fetch(`https://worldathletics.org/athletes/_/${aaId}`)).text());
     const newId = window.document.querySelector('meta[name=url]').getAttribute('content').split('/').at(-1).split('-').at(-1);
     console.log({ newId });
-    if (newId && newId !== aaId && newId.match(/^\d+$/)) aaId = newId;
+    if (newId && newId !== aaId && newId.match(/^\d+$/)) {
+      oldId = aaId;
+      aaId = newId;
+    }
     const graphqlSrc = [...window.document.querySelectorAll('script[src]')]
       .filter((script) => script.getAttribute('src').match(/\/_next\/static\/chunks\/[a-z0-9]{40}\.[a-z0-9]{20}\.js/))[1]
       .getAttribute('src');
@@ -369,7 +373,10 @@ export async function enrich(ids) {
             [WD.P_SEX_OR_GENDER]: { men: WD.Q_MALE, women: WD.Q_FEMALE }[sexNameUrlSlug],
             [WD.P_SPORT]: WD.Q_ATHLETICS,
             [WD.P_OCCUPATION]: WD.Q_ATHLETICS_COMPETITOR,
-            [WD.P_WA_ATHLETE_ID]: newId,
+            [WD.P_WA_ATHLETE_ID]: [
+              aaId,
+              ...(oldId ? [{ value: oldId, rank: 'deprecated', qualifiers: { [WD.P_REASON_FOR_DEPRECATED_RANK]: WD.Q_DEPRECATED_IAAF_ID_FORMAT } }] : []),
+            ],
             [WD.P_COUNTRY_FOR_SPORT]: { value: qCountry, references },
             [WD.P_DATE_OF_BIRTH]: birthDate ? { value: new Date(birthDate).toISOString().split('T')[0], references } : undefined,
             [WD.P_GIVEN_NAME]: qGivenName,
