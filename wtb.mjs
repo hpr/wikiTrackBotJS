@@ -278,6 +278,7 @@ export async function enrich(ids) {
           type: 'item',
           id: qDisciplineAtEvent,
           claims: disciplineAtEventClaims,
+          reconciliation: { mode: 'merge' },
         });
       }
       await wbEdit.entity.edit({
