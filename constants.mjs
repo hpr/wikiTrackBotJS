@@ -75,6 +75,8 @@ export const honourCats = {
   'European Championships': 'Q210707', // filled
   'European Indoor Championships': 'Q772787',
   'European Cup 10,000m': 'Q2202034',
+  'World Race Walking Cup': 'Q2002757',
+  'European Cup Race Walking': 'Q2999641',
   'European U23 Championships': 'Q2297714',
   'NACAC Championships': 'Q778559',
   'NACAC U23 Championships': 'Q6952135',
@@ -87,6 +89,7 @@ export const honourCats = {
   'World Cross Country Championships': 'Q1141381',
   'Youth Olympic Games': 'Q21198340',
   'Pan American Games': 'Q2869223',
+  'IAAF World Relays': 'Q926006',
   'World Athletics Final': 'Q1471412',
   'Grand Prix Final': 'Q1585186',
   'International Marathon': {
