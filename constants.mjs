@@ -36,6 +36,7 @@ export const WD = {
   P_MAIN_CATEGORY: 'P910',
   P_COMPETITION_CLASS: 'P2094',
   P_PARTICIPANT_IN: 'P1344',
+  P_END_TIME: 'P582',
 
   Q_HUMAN: 'Q5',
   Q_ATHLETICS: 'Q542',
@@ -249,6 +250,24 @@ export const honourCats = {
     GBR: 'Q3600404',
     YUG: 'Q74110233',
   },
+};
+
+export const clubs = {
+  BTC: 'Q55075461',
+  UAC: 'Q116046019',
+  OAC: 'Q116047661',
+  BB: 'Q105226803',
+  NAZ: 'Q116050865',
+  NBB: 'Q116052135',
+  TIN: 'Q116052271',
+  BOSS: 'Q116098400',
+  HB: 'Q5651244',
+  UA: 'Q110158112',
+  PUMA: 'Q116149192',
+  TME: 'Q116159765',
+  OTC: 'Q116159944',
+  EE: 'Q116160020',
+  // Very Nice TC?
 };
 
 export const GRAPHQL_QUERY = `

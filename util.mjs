@@ -104,4 +104,11 @@ export const getFullSuffix = (sexNameUrlSlug, categoryName, suffixEvt) => {
   if (['World Cross Country Championships'].includes(categoryName)) return ` – senior ${diminufy(sexNameUrlSlug, categoryName)} race`;
 
   return ` – ${diminufy(sexNameUrlSlug, categoryName)} ${suffixEvt}`;
-}
+};
+
+export const getMembers = async (wbk, qClub) => {
+  return wbk.simplify
+    .entities(await (await fetch(wbk.getEntities(qClub))).json(), { keepQualifiers: true })
+    [qClub].claims[WD.P_HAS_PARTS] // .filter(({ qualifiers }) => !qualifiers[WD.P_END_TIME])
+    .map(({ value }) => value);
+};

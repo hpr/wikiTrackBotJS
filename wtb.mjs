@@ -6,7 +6,7 @@ import countries from 'world-countries';
 import { nameFixer } from 'name-fixer';
 import fs from 'fs';
 import { exit } from 'process';
-import { CLUBATHS_JSON, GRAPHQL_QUERY, honourCats, HONOURMEETS_JSON, SUFFIXDISCIPLINES_JSON, WD } from './constants.mjs';
+import { CLUBATHS_JSON, clubs, GRAPHQL_QUERY, honourCats, HONOURMEETS_JSON, SUFFIXDISCIPLINES_JSON, WD } from './constants.mjs';
 import {
   diminufy,
   exactSearch,
@@ -14,6 +14,7 @@ import {
   getCountryCodeOfVenue,
   getFullSuffix,
   getLocation,
+  getMembers,
   getNatChamps,
   getPartNames,
   getPrecision,
@@ -60,12 +61,18 @@ const honourMeets = JSON.parse(fs.readFileSync(HONOURMEETS_JSON, 'utf-8'));
 
 const suffixDisciplines = JSON.parse(fs.readFileSync(SUFFIXDISCIPLINES_JSON, 'utf-8'));
 
-let endpoint, apiKey;
 export async function enrich(ids) {
   // ids: { aaId?, qid? }[]
   const athObjs = [];
   for (let { aaId, qid } of ids) {
-    let skip = false;
+    let athObj,
+      endpoint,
+      apiKey,
+      skip = false;
+    if (qid && !aaId) {
+      athObj = wbk.simplify.entities(await (await fetch(wbk.getEntities(qid))).json(), { keepIds: true, keepQualifiers: true })[qid];
+      aaId = athObj.claims[WD.P_WA_ATHLETE_ID][0].value;
+    }
 
     // if (!endpoint) {
     const { window } = new JSDOM(await (await fetch(`https://worldathletics.org/athletes/_/${aaId}`)).text());
@@ -99,13 +106,14 @@ export async function enrich(ids) {
       qid = wbk.parse.wb.pagesTitles(
         await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}|${WD.P_WA_ATHLETE_ID}=${iaafId}` }))).json()
       )[0];
-    const athObj =
-      // clubAths[qid] ??
-      qid ? wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], { keepIds: true, keepQualifiers: true }) : { claims: {} };
+    if (!athObj)
+      athObj = qid
+        ? wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], { keepIds: true, keepQualifiers: true })
+        : { claims: {} };
     if (!aaId) aaId = (athObj.claims[WD.P_WA_ATHLETE_ID] ?? [])[0]?.value;
 
     if (athObj.claims[WD.P_PERSONAL_BEST]) {
-      const hasPointsQual = athObj.claims[WD.P_PERSONAL_BEST].find((claim) => WD.P_POINTS_SCORED in claim.qualifiers);
+      // const hasPointsQual = athObj.claims[WD.P_PERSONAL_BEST].find((claim) => WD.P_POINTS_SCORED in (claim.qualifiers ?? {}));
       console.log('removing old pb claims');
       const guids = athObj.claims[WD.P_PERSONAL_BEST].map((c) => c.id);
       if (!skip) await wbEdit.claim.remove({ guid: guids });
@@ -385,3 +393,5 @@ export async function enrich(ids) {
 if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
+
+await enrich([(await getMembers(wbk, clubs.BTC)).map((qid) => ({ qid }))[1]]);
