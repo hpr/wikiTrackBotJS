@@ -107,14 +107,58 @@ export async function enrich(ids) {
         ).json();
     const { firstName, lastName, countryCode, birthDate, sexNameUrlSlug, iaafId } = data.competitor.basicData;
 
+    const athName = `${firstName} ${nameFixer(lastName)}`;
+
+    const {
+      name: { official: name },
+      demonyms: {
+        eng: { m: demonym },
+      },
+    } = countries.find((c) => c.cioc === countryCode) ?? { name: {}, demonyms: { eng: {} } };
+    let qCountry = countryCodeCache[countryCode];
+    if (!qCountry && !skip) {
+      const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
+      qCountry = Object.keys(entities)[0];
+      countryCodeCache[countryCode] = qCountry;
+    }
+
+    const basicInfoClaims = {
+      [WD.P_INSTANCE_OF]: WD.Q_HUMAN,
+      [WD.P_SEX_OR_GENDER]: { men: WD.Q_MALE, women: WD.Q_FEMALE }[sexNameUrlSlug],
+      [WD.P_SPORT]: WD.Q_ATHLETICS,
+      [WD.P_OCCUPATION]: WD.Q_ATHLETICS_COMPETITOR,
+      [WD.P_WA_ATHLETE_ID]: aaId,
+    };
+
     if (!qid)
       qid = wbk.parse.wb.pagesTitles(
         await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}|${WD.P_WA_ATHLETE_ID}=${iaafId}` }))).json()
       )[0];
-    if (!athObj)
-      athObj = qid
-        ? wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], { keepIds: true, keepQualifiers: true, keepReferences: true })
-        : { claims: {} };
+    if (!athObj) {
+      if (qid)
+        athObj = wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], {
+          keepIds: true,
+          keepQualifiers: true,
+          keepReferences: true,
+        });
+      else {
+        athObj = wbk.simplify.entity(
+          (
+            await wbEdit.entity.create({
+              type: 'item',
+              labels: { en: athName },
+              descriptions: { en: `${demonym || ''} athletics competitor`.trim() },
+              claims: basicInfoClaims,
+            })
+          ).entity,
+          {
+            keepIds: true,
+            keepQualifiers: true,
+            keepReferences: true,
+          }
+        );
+      }
+    }
     if (!aaId) aaId = (athObj.claims[WD.P_WA_ATHLETE_ID] ?? [])[0]?.value;
 
     if (athObj.claims[WD.P_PERSONAL_BEST]) {
@@ -232,7 +276,6 @@ export async function enrich(ids) {
             [WD.P_PART_OF]: honourCatEntity.id,
             [WD.P_SPORT]: WD.Q_ATHLETICS,
             [WD.P_POINT_IN_TIME]: meetDateToISO(meetDate),
-            [WD.P_PARTICIPANT]: athObj.id,
           },
         });
         await wbEdit.entity.edit({
@@ -287,6 +330,10 @@ export async function enrich(ids) {
         type: 'item',
         id: yearEvent.id,
         claims: {
+          [WD.P_PARTICIPANT]: {
+            value: athObj.id,
+            qualifiers: { [WD.P_COMPETITION_CLASS]: competitionClass },
+          },
           [WD.P_HAS_PARTS]: {
             value: qDisciplineAtEvent,
             qualifiers: { [WD.P_COMPETITION_CLASS]: competitionClass, [WD.P_POINT_IN_TIME]: meetDateToISO(meetDate) },
@@ -325,21 +372,6 @@ export async function enrich(ids) {
       });
     }
 
-    const athName = `${firstName} ${nameFixer(lastName)}`;
-
-    const {
-      name: { official: name },
-      demonyms: {
-        eng: { m: demonym },
-      },
-    } = countries.find((c) => c.cioc === countryCode) ?? { name: {}, demonyms: { eng: {} } };
-    let qCountry = countryCodeCache[countryCode];
-    if (!qCountry && !skip) {
-      const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(name))).json();
-      qCountry = Object.keys(entities)[0];
-      countryCodeCache[countryCode] = qCountry;
-    }
-
     const givenNameCandidates =
       !skip &&
       (athObj.claims[WD.P_GIVEN_NAME]
@@ -370,20 +402,14 @@ export async function enrich(ids) {
     const qFamilyName = Object.keys(qFamilyNames).find((n) => qFamilyNames[n].labels.en?.value.toLowerCase() === lastName.toLowerCase());
 
     const lastActiveYear = String(Math.max(...activeYears.map(Number)));
-    const action = qid ? 'edit' : 'create';
     fs.writeFileSync('./cache.json', JSON.stringify({ countryCodeCache, disciplineCache, locationCache, competitionClassCache }), 'utf-8');
     const { entity } = skip
       ? {}
-      : await wbEdit.entity[action]({
+      : await wbEdit.entity.edit({
           id: qid,
           type: 'item',
-          labels: { en: athName },
-          descriptions: { en: `${demonym || ''} athletics competitor`.trim() },
           claims: removeRefs(athObj, {
-            [WD.P_INSTANCE_OF]: WD.Q_HUMAN,
-            [WD.P_SEX_OR_GENDER]: { men: WD.Q_MALE, women: WD.Q_FEMALE }[sexNameUrlSlug],
-            [WD.P_SPORT]: WD.Q_ATHLETICS,
-            [WD.P_OCCUPATION]: WD.Q_ATHLETICS_COMPETITOR,
+            ...basicInfoClaims,
             [WD.P_WA_ATHLETE_ID]: [
               aaId,
               ...(oldId ? [{ value: oldId, rank: 'deprecated', qualifiers: { [WD.P_REASON_FOR_DEPRECATED_RANK]: WD.Q_REDIRECT } }] : []),
