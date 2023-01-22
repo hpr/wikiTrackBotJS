@@ -226,7 +226,7 @@ export async function enrich(ids) {
       }
       let yearEvent;
 
-      const honourCatEntity = wbk.simplify.entities(await (await fetch(wbk.getEntities([qCat]))).json())[qCat];
+      const honourCatEntity = wbk.simplify.entities(await (await fetch(wbk.getEntities(qCat))).json())[qCat];
       const qYearEvent = await exactSearch(wbk, `${year} ${honourCatEntity.labels.en}`);
       if (qYearEvent) yearEvent = wbk.simplify.entities(await (await fetch(wbk.getEntities(qYearEvent))).json())[qYearEvent];
 
@@ -288,6 +288,7 @@ export async function enrich(ids) {
         yearEvent = wbk.simplify.entity(entity);
       }
 
+      if (!yearEvent.labels.en) yearEvent.labels.en = `${year} ${honourCatEntity.labels.en}`;
       console.log(discipline, yearEvent.labels.en);
       yearEvent.claims[WD.P_HAS_PARTS] ??= [];
 
