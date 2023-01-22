@@ -112,3 +112,28 @@ export const getMembers = async (wbk, qClub) => {
     [qClub].claims[WD.P_HAS_PARTS] // .filter(({ qualifiers }) => !qualifiers[WD.P_END_TIME])
     .map(({ value }) => value);
 };
+
+export const mergeRef = (athObj, wdClaim, valueOrAmount, references = []) => {
+  return references.filter(
+    (reference) =>
+      !(athObj.claims[wdClaim] ?? [])
+        .find((c) => [c.value, c.amount].includes(valueOrAmount) || (c.value?.slice && c.value.slice(0, valueOrAmount?.length) === valueOrAmount))
+        ?.references?.find((ref) => Object.keys(ref).sort().join(',') === Object.keys(reference).sort().join(','))
+  );
+};
+
+export const removeRefs = (athObj, claims) => {
+  const newClaims = {};
+  for (const prop in claims) {
+    if (claims[prop] === undefined) continue;
+    let vals = claims[prop];
+    if (!Array.isArray(vals)) vals = [vals];
+    for (let i = 0; i < vals.length; i++) {
+      if (typeof vals[i] !== 'object') vals[i] = { value: vals[i] };
+      if (vals[i].references && !Array.isArray(vals[i].references)) vals[i].references = [vals[i].references];
+      vals[i].references = mergeRef(athObj, prop, vals[i].value ?? vals[i].amount, vals[i].references);
+    }
+    newClaims[prop] = vals;
+  }
+  return newClaims;
+};

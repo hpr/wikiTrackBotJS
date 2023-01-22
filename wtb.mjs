@@ -20,6 +20,7 @@ import {
   getPrecision,
   markToSecs,
   meetDateToISO,
+  removeRefs,
   sexFromSlug,
 } from './util.mjs';
 dotenv.config();
@@ -71,7 +72,7 @@ export async function enrich(ids) {
       oldId,
       skip = false;
     if (qid && !aaId) {
-      athObj = wbk.simplify.entities(await (await fetch(wbk.getEntities(qid))).json(), { keepIds: true, keepQualifiers: true })[qid];
+      athObj = wbk.simplify.entities(await (await fetch(wbk.getEntities(qid))).json(), { keepIds: true, keepQualifiers: true, keepReferences: true })[qid];
       aaId = athObj.claims[WD.P_WA_ATHLETE_ID][0].value;
     }
 
@@ -112,7 +113,7 @@ export async function enrich(ids) {
       )[0];
     if (!athObj)
       athObj = qid
-        ? wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], { keepIds: true, keepQualifiers: true })
+        ? wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], { keepIds: true, keepQualifiers: true, keepReferences: true })
         : { claims: {} };
     if (!aaId) aaId = (athObj.claims[WD.P_WA_ATHLETE_ID] ?? [])[0]?.value;
 
@@ -377,14 +378,14 @@ export async function enrich(ids) {
           type: 'item',
           labels: { en: athName },
           descriptions: { en: `${demonym || ''} athletics competitor`.trim() },
-          claims: {
+          claims: removeRefs(athObj, {
             [WD.P_INSTANCE_OF]: WD.Q_HUMAN,
             [WD.P_SEX_OR_GENDER]: { men: WD.Q_MALE, women: WD.Q_FEMALE }[sexNameUrlSlug],
             [WD.P_SPORT]: WD.Q_ATHLETICS,
             [WD.P_OCCUPATION]: WD.Q_ATHLETICS_COMPETITOR,
             [WD.P_WA_ATHLETE_ID]: [
               aaId,
-              ...(oldId ? [{ value: oldId, rank: 'deprecated', qualifiers: { [WD.P_REASON_FOR_DEPRECATED_RANK]: WD.Q_DEPRECATED_IAAF_ID_FORMAT } }] : []),
+              ...(oldId ? [{ value: oldId, rank: 'deprecated', qualifiers: { [WD.P_REASON_FOR_DEPRECATED_RANK]: WD.Q_REDIRECT } }] : []),
             ],
             [WD.P_COUNTRY_FOR_SPORT]: { value: qCountry, references },
             [WD.P_DATE_OF_BIRTH]: birthDate ? { value: new Date(birthDate).toISOString().split('T')[0], references } : undefined,
@@ -398,8 +399,18 @@ export async function enrich(ids) {
             })),
             [WD.P_PERSONAL_BEST]: personalBests,
             [WD.P_PARTICIPANT_IN]: participantIns,
+          }),
+          reconciliation: {
+            mode: 'merge',
+            // matchingReferences: [`${WD.P_STATED_IN}:all`, `${WD.P_RETRIEVED}:all`],
+            // matchingReferences: [`${WD.P_STATED_IN}:any`, `${WD.P_RETRIEVED}:any`],
+            // matchingReferences: [`${WD.P_STATED_IN}:all`], creates dupes
+            // matchingReferences: [`${WD.P_STATED_IN}:all`, `${WD.P_RETRIEVED}:any`],
+            // matchingReferences: [`${WD.P_STATED_IN}:any`, `${WD.P_RETRIEVED}:all`],
+            // matchingReferences: [`${WD.P_STATED_IN}:any`], creates dupes
+            // matchingReferences: [`${WD.P_RETRIEVED}:any`],
+            // matchingReferences: [`${WD.P_RETRIEVED}:all`],
           },
-          reconciliation: { mode: 'merge' },
         });
     athObjs.push(skip ? athObj : entity);
   }
@@ -410,4 +421,4 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich([(await getMembers(wbk, clubs.BTC)).map((qid) => ({ qid }))[3]]);
+await enrich([(await getMembers(wbk, clubs.BTC)).map((qid) => ({ qid }))[4]]);

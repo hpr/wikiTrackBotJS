@@ -59,6 +59,7 @@ export const WD = {
   Q_SPORTING_EVENT: 'Q16510064',
   Q_ATHLETICS_MEETING: 'Q11783626',
   Q_DEPRECATED_IAAF_ID_FORMAT: 'Q116282346',
+  Q_REDIRECT: 'Q45403344',
 };
 
 export const honourCats = {
