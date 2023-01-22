@@ -52,8 +52,8 @@ export const wbEdit = wikibaseEdit({
 
 const { countryCodeCache, disciplineCache, locationCache, competitionClassCache } = JSON.parse(fs.readFileSync('./cache.json', 'utf-8'));
 
-const clubAths = JSON.parse(fs.readFileSync(CLUBATHS_JSON, 'utf-8'));
-const honourMeets = JSON.parse(fs.readFileSync(HONOURMEETS_JSON, 'utf-8'));
+// const clubAths = JSON.parse(fs.readFileSync(CLUBATHS_JSON, 'utf-8'));
+// const honourMeets = JSON.parse(fs.readFileSync(HONOURMEETS_JSON, 'utf-8'));
 
 // const qToRefresh = '';
 // honourMeets[qToRefresh] = (await (await fetch(wbk.getEntities([qToRefresh]))).json()).entities[qToRefresh];
@@ -147,7 +147,7 @@ export async function enrich(ids) {
     }
 
     const participantIns = [];
-    console.log(honoursResults);
+    console.log(honoursResults.map(({ discipline, competition, venue, date }) => ({ discipline, competition, venue, date })));
     for (const { competition, date, discipline, indoor, mark, place, venue, categoryName } of honoursResults) {
       let qCat = honourCats[categoryName];
       if (typeof qCat === 'object') {
@@ -157,7 +157,7 @@ export async function enrich(ids) {
         let found = false;
         for (const substr in qCat._includes) {
           if (key.toLowerCase().includes(substr)) {
-            qCat = qCat._includes[key.toLowerCase()];
+            qCat = qCat._includes[substr];
             found = true;
             break;
           }
@@ -243,7 +243,7 @@ export async function enrich(ids) {
         yearEvent = wbk.simplify.entity(entity);
       }
 
-      console.log(yearEvent.labels.en);
+      console.log(discipline, yearEvent.labels.en);
       yearEvent.claims[WD.P_HAS_PARTS] ??= [];
 
       const disciplineAtEventClaims = {
@@ -421,4 +421,4 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich([(await getMembers(wbk, clubs.BTC)).map((qid) => ({ qid }))[4]]);
+await enrich([(await getMembers(wbk, clubs.BTC)).map((qid) => ({ qid }))[7]]);

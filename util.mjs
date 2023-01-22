@@ -1,5 +1,6 @@
 import { WD } from './constants.mjs';
 import countries from 'world-countries';
+import fs from 'fs';
 
 export const markToSecs = (mark) => {
   mark = mark.replaceAll('h', '').replaceAll('+', '').replaceAll('*', '').trim();
