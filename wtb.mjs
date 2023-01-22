@@ -6,7 +6,7 @@ import countries from 'world-countries';
 import { nameFixer } from 'name-fixer';
 import fs from 'fs';
 import { exit } from 'process';
-import { CLUBATHS_JSON, clubs, GRAPHQL_QUERY, honourCats, HONOURMEETS_JSON, SUFFIXDISCIPLINES_JSON, WD } from './constants.mjs';
+import { CLUBATHS_JSON, clubs, GRAPHQL_QUERY, honourCats, HONOURMEETS_JSON, removeTweaks, SUFFIXDISCIPLINES_JSON, WD } from './constants.mjs';
 import {
   diminufy,
   exactSearch,
@@ -167,7 +167,7 @@ export async function enrich(ids) {
       const guids = athObj.claims[WD.P_PERSONAL_BEST].map((c) => c.id);
       if (!skip) await wbEdit.claim.remove({ guid: guids });
     }
-    console.log(`${skip ? 'skipp' : 'fetch'}ing: ${aaId} ${qid}`, athObj.labels?.en);
+    console.log(athObj.labels?.en, aaId, qid);
 
     const { activeYears } = data.competitor.resultsByYear;
     const { results } = data.competitor.personalBests;
@@ -193,6 +193,7 @@ export async function enrich(ids) {
     const participantIns = [];
     console.log(honoursResults.map(({ discipline, competition, venue, date }) => ({ discipline, competition, venue, date })));
     for (const { competition, date, discipline, indoor, mark, place, venue, categoryName } of honoursResults) {
+      if ((removeTweaks[athObj.id]?.[categoryName]?.[discipline] ?? []).includes(date)) continue;
       let qCat = honourCats[categoryName];
       if (typeof qCat === 'object') {
         if (qCat._sameAs) qCat = honourCats[qCat._sameAs];
@@ -302,6 +303,7 @@ export async function enrich(ids) {
             [WD.P_RANKING]: formatPlace(place),
             [WD.P_RACE_TIME]: { amount: markToSecs(mark), precision: getPrecision(mark), unit: WD.Q_SECOND },
           },
+          references,
         },
       };
       // exact match
@@ -448,4 +450,5 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich([(await getMembers(wbk, clubs.BTC)).map((qid) => ({ qid }))[14]]);
+// await enrich([(await getMembers(wbk, clubs.UAC)).map((qid) => ({ qid }))[0]]);
+await enrich([{ qid: 'Q107535252' }]);

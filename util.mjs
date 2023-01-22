@@ -103,6 +103,7 @@ export const formatPlace = (place) => place.replaceAll('.', '').trim();
 
 export const getFullSuffix = (sexNameUrlSlug, categoryName, suffixEvt) => {
   if (['World Cross Country Championships'].includes(categoryName)) return ` – senior ${diminufy(sexNameUrlSlug, categoryName)} race`;
+  if (suffixEvt.split(' ').includes('mixed')) return ` – ${suffixEvt}`;
 
   return ` – ${diminufy(sexNameUrlSlug, categoryName)} ${suffixEvt}`;
 };

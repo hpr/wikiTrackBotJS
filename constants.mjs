@@ -4,6 +4,14 @@ export const HONOURCATS_JSON = './honours/honourCats.json';
 export const SUFFIXDISCIPLINES_JSON = './honours/suffixDisciplines.json';
 export const HONOURMEETS_JSON = './honours/honourMeets.json';
 
+export const removeTweaks = {
+  Q107535252: { // Josh Thompson
+    'NCAA Indoor Championships': {
+      'One Mile': ['11 MAR 2017'], // add to Josh Kerr
+    },
+  },
+};
+
 export const WD = {
   P_SEX_OR_GENDER: 'P21',
   P_INSTANCE_OF: 'P31',
@@ -151,6 +159,7 @@ export const honourCats = {
     'Zürich Weltklasse': 'Q661729',
     'Stockholm DN Galan': 'Q1154703',
     'Bauhaus-Galan': 'Q1154703', // dupe
+    'BAUHAUS-Galan': 'Q1154703', // dupe
     "London Sainsbury's Anniversary Games": 'Q791183',
     'London Müller Anniversary Games': 'Q791183', // dupe
     'Crystal Palace AVIVA London Grand Prix': 'Q791183', // dupe
