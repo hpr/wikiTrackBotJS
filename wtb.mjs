@@ -182,13 +182,14 @@ export async function enrich(ids) {
       let yearEvent;
 
       const honourCatEntity = wbk.simplify.entities(await (await fetch(wbk.getEntities([qCat]))).json())[qCat];
+      const qYearEvent = await exactSearch(wbk, `${year} ${honourCatEntity.labels.en}`);
+      if (qYearEvent) yearEvent = wbk.simplify.entities(await (await fetch(wbk.getEntities(qYearEvent))).json())[qYearEvent];
+
       honourCatEntity.claims[WD.P_MAIN_CATEGORY] ??= [];
-      const qWikiCategory = honourCatEntity.claims[WD.P_MAIN_CATEGORY][0]; // todo handle non-exist
+      const qWikiCategory = honourCatEntity.claims[WD.P_MAIN_CATEGORY][0];
       if (qWikiCategory) {
         const wikiCategory = wbk.simplify.entities(await (await fetch(wbk.getEntities([qWikiCategory]))).json())[qWikiCategory];
-        const qYearEvent = await exactSearch(wbk, `${year} ${honourCatEntity.labels.en}`);
-        if (qYearEvent) yearEvent = wbk.simplify.entities(await (await fetch(wbk.getEntities(qYearEvent))).json())[qYearEvent];
-        else {
+        if (!yearEvent) {
           for (const lang in wikiCategory.sitelinks) {
             let categorymembers = [];
             try {
@@ -421,4 +422,4 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich([(await getMembers(wbk, clubs.BTC)).map((qid) => ({ qid }))[7]]);
+await enrich([(await getMembers(wbk, clubs.BTC)).map((qid) => ({ qid }))[14]]);
