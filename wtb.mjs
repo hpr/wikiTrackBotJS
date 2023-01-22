@@ -297,6 +297,7 @@ export async function enrich(ids) {
         [WD.P_PART_OF]: yearEvent.id,
         [WD.P_SPORT]: WD.Q_ATHLETICS,
         [WD.P_COMPETITION_CLASS]: competitionClass,
+        [WD.P_WINNER]: formatPlace(place) === '1' ? athObj.id : undefined,
         [WD.P_POINT_IN_TIME]: meetDateToISO(meetDate),
         [WD.P_PARTICIPANT]: {
           value: athObj.id,
