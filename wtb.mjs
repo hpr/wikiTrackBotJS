@@ -173,12 +173,6 @@ export async function enrich(ids) {
       await wbEdit.qualifier.set({ guid, property: WD.P_REASON_FOR_DEPRECATED_RANK, value: WD.Q_REDIRECT });
     }
 
-    if (athObj.claims[WD.P_PERSONAL_BEST]) {
-      // const hasPointsQual = athObj.claims[WD.P_PERSONAL_BEST].find((claim) => WD.P_POINTS_SCORED in (claim.qualifiers ?? {}));
-      console.log('removing old pb claims');
-      const guids = athObj.claims[WD.P_PERSONAL_BEST].map((c) => c.id);
-      if (!skip) await wbEdit.claim.remove({ guid: guids });
-    }
     console.log(athObj.labels?.en, aaId, qid);
 
     const { activeYears } = data.competitor.resultsByYear;
@@ -401,6 +395,24 @@ export async function enrich(ids) {
       });
     }
 
+    if (athObj.claims[WD.P_PERSONAL_BEST]) {
+      if (
+        athObj.claims[WD.P_PERSONAL_BEST]
+          .map((pb) => +pb.value)
+          .sort()
+          .join(',') !==
+        personalBests
+          .map((pb) => +pb.amount)
+          .sort()
+          .join(',')
+      ) {
+        // const hasPointsQual = athObj.claims[WD.P_PERSONAL_BEST].find((claim) => WD.P_POINTS_SCORED in (claim.qualifiers ?? {}));
+        console.log('removing old pb claims');
+        const guids = athObj.claims[WD.P_PERSONAL_BEST].map((c) => c.id);
+        if (!skip) await wbEdit.claim.remove({ guid: guids });
+      }
+    }
+
     const givenNameCandidates =
       !skip &&
       (athObj.claims[WD.P_GIVEN_NAME]
@@ -473,5 +485,5 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich((await getMembers(wbk, clubs.EE)).map((qid) => ({ qid })).slice(0));
+// await enrich((await getMembers(wbk, clubs.EE)).map((qid) => ({ qid })).slice(0));
 // await enrich([{ qid: 'Q107535252' }]);
