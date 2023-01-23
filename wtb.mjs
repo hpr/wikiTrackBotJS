@@ -89,7 +89,6 @@ export async function enrich(ids) {
     // if (!endpoint) {
     const { window } = new JSDOM(await (await fetch(`https://worldathletics.org/athletes/_/${aaId}`)).text());
     const newId = window.document.querySelector('meta[name=url]').getAttribute('content').split('/').at(-1).split('-').at(-1);
-    console.log({ newId });
     if (newId && newId !== aaId && newId.match(/^\d+$/)) {
       oldId = aaId;
       aaId = newId;
@@ -115,7 +114,11 @@ export async function enrich(ids) {
             }),
           })
         ).json();
-    const { firstName, lastName, countryCode, birthDate, sexNameUrlSlug, iaafId } = data.competitor.basicData;
+    console.log(data.competitor.basicData);
+    let { firstName, lastName, givenName, familyName, countryCode, birthDate, sexNameUrlSlug, sexCode, iaafId } = data.competitor.basicData;
+    firstName ??= givenName;
+    lastName ??= familyName;
+    sexNameUrlSlug ??= sexCode === 'M' ? 'men' : sexCode === 'F' ? 'women' : undefined;
 
     const athName = `${firstName} ${nameFixer(lastName)}`;
 
@@ -457,5 +460,5 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich([(await getMembers(wbk, clubs.UAC)).map((qid) => ({ qid }))[4]]);
+await enrich([(await getMembers(wbk, clubs.UAC)).map((qid) => ({ qid }))[6]]);
 // await enrich([{ qid: 'Q107535252' }]);

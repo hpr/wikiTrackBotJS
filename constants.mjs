@@ -328,14 +328,18 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
       __typename
     }
     basicData {
+      friendlyName
       firstName
+      givenName
       lastName
+      familyName
       countryName
       countryCode
       countryUrlSlug
       birthDate
       birthDateStr
       sexNameUrlSlug
+      sexCode
       urlSlug
       representativeId
       biography
