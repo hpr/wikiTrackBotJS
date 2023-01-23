@@ -171,6 +171,7 @@ export const honourCats = {
     'Birmingham Aviva Grand Prix': 'Q746741', // dupe
     'Gateshead AVIVA British Grand Prix': 'Q746741', // dupe
     'Müller Grand Prix': 'Q746741', // dupe
+    'Müller British GP': 'Q746741', // dupe
     'New York adidas Grand Prix': 'Q240958',
     'Doha IAAF Diamond League': 'Q1118647',
     'Ooredoo Doha Meeting': 'Q1118647', // dupe
