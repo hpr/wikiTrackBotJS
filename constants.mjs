@@ -88,7 +88,7 @@ export const honourCats = {
   'World Indoor Championships': 'Q725169', // filled
   'NCAA Championships': 'Q116202306', // empty
   'NCAA Indoor Championships': 'Q116202343', // empty
-  'Diamond League Final': {
+  'Diamond League Final': { // TODO problem: 'diamond league final' are all dupes of 'diamond league', check if we should always skip this?
     _sameAs: 'Diamond League',
   },
   'World (Continental) Cup': 'Q1161047', // empty
@@ -107,6 +107,7 @@ export const honourCats = {
   'Commonwealth Games': 'Q2869155', // filled
   'European Team Championships': 'Q1630626', // empty
   'European U20 Championships': 'Q428792', // sparse
+  'European U18 Championships': 'Q14867489',
   'World University Games': 'Q1988040',
   'Ibero-American Championships ': 'Q2632641',
   'Ibero-American Championships': 'Q2632641', // dupe, correcting above typo
@@ -245,6 +246,7 @@ export const honourCats = {
     AUT: 'Q74111260',
     BLR: 'Q66330372',
     BEL: 'Q2198291',
+    BOT: 'Q116332081',
     BRA: 'Q10384955',
     BUL: 'Q74110010',
     CAN: 'Q28499005',

@@ -203,7 +203,7 @@ export async function enrich(ids) {
     }
 
     const participantIns = [];
-    console.log(honoursResults.map(({ discipline, competition, venue, date }) => ({ discipline, competition, venue, date })));
+    console.log(honoursResults.map(({ discipline, competition, venue, place, date }) => ({ discipline, competition, venue, place, date })));
     const tempYearEvents = {};
     for (const { competition, date, discipline, indoor, mark, place, venue, categoryName } of honoursResults) {
       // TODO get "item already exists with same label" for doubles, add delay after creating meet or add to cache?
@@ -431,7 +431,7 @@ export async function enrich(ids) {
     const qFamilyName = Object.keys(qFamilyNames).find((n) => qFamilyNames[n].labels.en?.value.toLowerCase() === lastName.toLowerCase());
 
     const lastActiveYear = String(Math.max(...activeYears.map(Number)));
-    fs.writeFileSync('./cache.json', JSON.stringify({ countryCodeCache, disciplineCache, locationCache, competitionClassCache }), 'utf-8');
+    fs.writeFileSync('./cache.json', JSON.stringify({ countryCodeCache, disciplineCache, locationCache, competitionClassCache }, null, 2), 'utf-8');
     const { entity } = skip
       ? {}
       : await wbEdit.entity.edit({
@@ -473,5 +473,5 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich([(await getMembers(wbk, clubs.NBB)).map((qid) => ({ qid }))[2]]);
+await enrich((await getMembers(wbk, clubs.OTC)).map((qid) => ({ qid })).slice(6));
 // await enrich([{ qid: 'Q107535252' }]);
