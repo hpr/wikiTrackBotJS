@@ -312,7 +312,7 @@ export async function enrich(ids) {
         precision: getPrecision(mark),
         unit: WD.Q_SECOND,
         qualifiers: {
-          [WD.P_NATURE_OF_STATEMENT]: mark.includes('(') ? WD.Q_RANKING_ACHIEVED_BY_HEATS : undefined,
+          [WD.P_DETERMINATION_METHOD]: mark.includes('(') ? WD.Q_RANKING_ACHIEVED_BY_HEATS : undefined,
         },
       };
 
@@ -472,5 +472,5 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich([(await getMembers(wbk, clubs.OAC)).map((qid) => ({ qid }))[11]]);
+await enrich([(await getMembers(wbk, clubs.BB)).map((qid) => ({ qid }))[0]]);
 // await enrich([{ qid: 'Q107535252' }]);
