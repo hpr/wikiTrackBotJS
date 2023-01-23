@@ -101,6 +101,7 @@ export const honourCats = {
   'Commonwealth Games': 'Q2869155', // filled
   'European Team Championships': 'Q1630626', // empty
   'European U20 Championships': 'Q428792', // sparse
+  'World University Games': 'Q1988040',
   'World U18 Championships': 'Q975128', // needs fill
   'Asian Games': 'Q2629590',
   'World Half Marathon Championships': 'Q1415179',
@@ -164,6 +165,7 @@ export const honourCats = {
     'Müller Grand Prix': 'Q746741', // dupe
     'New York adidas Grand Prix': 'Q240958',
     'Doha IAAF Diamond League': 'Q1118647',
+    'Ooredoo Doha Meeting': 'Q1118647', // dupe
     'Zürich Weltklasse': 'Q661729',
     'Stockholm DN Galan': 'Q1154703',
     'Bauhaus-Galan': 'Q1154703', // dupe
@@ -217,6 +219,7 @@ export const honourCats = {
     _main: 'Q116203522',
     USA: {
       Marathon: 'Q17514151',
+      // TODO 2022 usatf 10,000 champs not counted as honour
       _default: 'Q2955194',
     },
     AND: 'Q106839576',
