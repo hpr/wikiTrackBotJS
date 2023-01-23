@@ -6,7 +6,17 @@ import countries from 'world-countries';
 import { nameFixer } from 'name-fixer';
 import fs from 'fs';
 import { exit } from 'process';
-import { CLUBATHS_JSON, clubs, GRAPHQL_QUERY, honourCats, HONOURMEETS_JSON, removeTweaks, SUFFIXDISCIPLINES_JSON, WD } from './constants.mjs';
+import {
+  athObjSimplifyOptions,
+  CLUBATHS_JSON,
+  clubs,
+  GRAPHQL_QUERY,
+  honourCats,
+  HONOURMEETS_JSON,
+  removeTweaks,
+  SUFFIXDISCIPLINES_JSON,
+  WD,
+} from './constants.mjs';
 import {
   diminufy,
   exactSearch,
@@ -72,7 +82,7 @@ export async function enrich(ids) {
       oldId,
       skip = false;
     if (qid && !aaId) {
-      athObj = wbk.simplify.entities(await (await fetch(wbk.getEntities(qid))).json(), { keepIds: true, keepQualifiers: true, keepReferences: true })[qid];
+      athObj = wbk.simplify.entities(await (await fetch(wbk.getEntities(qid))).json(), athObjSimplifyOptions)[qid];
       aaId = athObj.claims[WD.P_WA_ATHLETE_ID][0].value;
     }
 
@@ -135,12 +145,7 @@ export async function enrich(ids) {
         await (await fetch(wbk.cirrusSearchPages({ haswbstatement: `${WD.P_WA_ATHLETE_ID}=${aaId}|${WD.P_WA_ATHLETE_ID}=${iaafId}` }))).json()
       )[0];
     if (!athObj) {
-      if (qid)
-        athObj = wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], {
-          keepIds: true,
-          keepQualifiers: true,
-          keepReferences: true,
-        });
+      if (qid) athObj = wbk.simplify.entity((await (await fetch(wbk.getEntities([qid]))).json()).entities[qid], athObjSimplifyOptions);
       else {
         athObj = wbk.simplify.entity(
           (
@@ -151,15 +156,16 @@ export async function enrich(ids) {
               claims: basicInfoClaims,
             })
           ).entity,
-          {
-            keepIds: true,
-            keepQualifiers: true,
-            keepReferences: true,
-          }
+          athObjSimplifyOptions
         );
       }
     }
     if (!aaId) aaId = (athObj.claims[WD.P_WA_ATHLETE_ID] ?? [])[0]?.value;
+    if (oldId) {
+      const guid = athObj.claims[WD.P_WA_ATHLETE_ID].find((c) => c.value === oldId).id;
+      await wbEdit.claim.update({ guid, rank: 'deprecated' });
+      await wbEdit.qualifier.set({ guid, property: WD.P_REASON_FOR_DEPRECATED_RANK, value: WD.Q_REDIRECT });
+    }
 
     if (athObj.claims[WD.P_PERSONAL_BEST]) {
       // const hasPointsQual = athObj.claims[WD.P_PERSONAL_BEST].find((claim) => WD.P_POINTS_SCORED in (claim.qualifiers ?? {}));
@@ -192,7 +198,9 @@ export async function enrich(ids) {
 
     const participantIns = [];
     console.log(honoursResults.map(({ discipline, competition, venue, date }) => ({ discipline, competition, venue, date })));
+    const tempYearEvents = {};
     for (const { competition, date, discipline, indoor, mark, place, venue, categoryName } of honoursResults) {
+      // TODO get "item already exists with same label" for doubles, add delay after creating meet or add to cache?
       if ((removeTweaks[athObj.id]?.[categoryName]?.[discipline] ?? []).includes(date)) continue;
       let qCat = honourCats[categoryName];
       if (typeof qCat === 'object') {
@@ -227,7 +235,7 @@ export async function enrich(ids) {
       let yearEvent;
 
       const honourCatEntity = wbk.simplify.entities(await (await fetch(wbk.getEntities(qCat))).json())[qCat];
-      const qYearEvent = await exactSearch(wbk, `${year} ${honourCatEntity.labels.en}`);
+      const qYearEvent = tempYearEvents[`${year} ${honourCatEntity.labels.en}`] ?? (await exactSearch(wbk, `${year} ${honourCatEntity.labels.en}`));
       if (qYearEvent) yearEvent = wbk.simplify.entities(await (await fetch(wbk.getEntities(qYearEvent))).json())[qYearEvent];
 
       honourCatEntity.claims[WD.P_MAIN_CATEGORY] ??= [];
@@ -287,6 +295,7 @@ export async function enrich(ids) {
         });
         yearEvent = wbk.simplify.entity(entity);
       }
+      tempYearEvents[`${year} ${honourCatEntity.labels.en}`] = yearEvent;
 
       if (!yearEvent.labels.en) yearEvent.labels.en = `${year} ${honourCatEntity.labels.en}`;
       console.log(discipline, yearEvent.labels.en);
@@ -414,10 +423,6 @@ export async function enrich(ids) {
           type: 'item',
           claims: removeRefs(athObj, {
             ...basicInfoClaims,
-            [WD.P_WA_ATHLETE_ID]: [
-              aaId,
-              ...(oldId ? [{ value: oldId, rank: 'deprecated', qualifiers: { [WD.P_REASON_FOR_DEPRECATED_RANK]: WD.Q_REDIRECT } }] : []),
-            ],
             [WD.P_COUNTRY_FOR_SPORT]: { value: qCountry, references },
             [WD.P_DATE_OF_BIRTH]: birthDate ? { value: new Date(birthDate).toISOString().split('T')[0], references } : undefined,
             [WD.P_GIVEN_NAME]: qGivenName,
@@ -452,5 +457,5 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-// await enrich([(await getMembers(wbk, clubs.UAC)).map((qid) => ({ qid }))[0]]);
-await enrich([{ qid: 'Q107535252' }]);
+await enrich([(await getMembers(wbk, clubs.UAC)).map((qid) => ({ qid }))[4]]);
+// await enrich([{ qid: 'Q107535252' }]);

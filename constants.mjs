@@ -5,9 +5,10 @@ export const SUFFIXDISCIPLINES_JSON = './honours/suffixDisciplines.json';
 export const HONOURMEETS_JSON = './honours/honourMeets.json';
 
 export const removeTweaks = {
-  Q107535252: { // Josh Thompson
+  Q107535252: {
+    // Josh Thompson
     'NCAA Indoor Championships': {
-      'One Mile': ['11 MAR 2017'], // add to Josh Kerr
+      'One Mile': ['11 MAR 2017'], // TODO add to Josh Kerr
     },
   },
 };
@@ -282,6 +283,8 @@ export const clubs = {
   EE: 'Q116160020',
   // Very Nice TC?
 };
+
+export const athObjSimplifyOptions = { keepIds: true, keepQualifiers: true, keepReferences: true };
 
 export const GRAPHQL_QUERY = `
 query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
