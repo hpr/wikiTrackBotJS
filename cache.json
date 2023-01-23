@@ -102,9 +102,12 @@
     "60 Metres": "Q246681",
     "100 Metres": "Q164761",
     "One Hour": "Q2164200",
-    "100 Metres Hurdles": "Q164731"
+    "100 Metres Hurdles": "Q164731",
+    "5 Miles Road": "Q78144177"
   },
   "locationCache": {
+    "Randalls Island, NY (USA)": "Q1198892",
+    "St. Anthony's (USA)": "Q7587059",
     "Michael Johnson Track, Nike Campus, Beaverton, OR (USA)": "Q81856",
     "Hillsdale, MI (USA)": "Q2373817",
     "Findlay, OH (USA)": "Q590191",
