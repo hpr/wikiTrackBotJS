@@ -356,6 +356,8 @@ export async function enrich(ids) {
         type: 'item',
         id: yearEvent.id,
         claims: {
+          [WD.P_INSTANCE_OF]: WD.Q_ATHLETICS_MEETING,
+          [WD.P_PART_OF]: honourCatEntity.id,
           [WD.P_PARTICIPANT]: {
             value: athObj.id,
             qualifiers: { [WD.P_COMPETITION_CLASS]: competitionClass },
@@ -471,5 +473,5 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich([(await getMembers(wbk, clubs.NAZ)).map((qid) => ({ qid }))[1]]);
+await enrich([(await getMembers(wbk, clubs.NAZ)).map((qid) => ({ qid }))[4]]);
 // await enrich([{ qid: 'Q107535252' }]);
