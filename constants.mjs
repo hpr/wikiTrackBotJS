@@ -128,6 +128,13 @@ export const honourCats = {
   },
   'Major Marathon': {
     _main: 'Q282092',
+    _includes: {
+      boston: 'Q826038',
+      'new york': 'Q752138',
+      berlin: 'Q161222',
+      london: 'Q578794',
+      chicago: 'Q1071822',
+    },
     'Boston Marathon': 'Q826038',
     'New York Marathon': 'Q752138',
     'New York City Marathon': 'Q752138', // dupe
@@ -139,6 +146,7 @@ export const honourCats = {
     'TCS London Marathon': 'Q578794', // dupe
     'Virgin Money London Marathon': 'Q578794', // dupe
     'Chicago Marathon': 'Q1071822',
+    'Bank of America Chicago Marathon': 'Q1071822', // dupe
   },
   'Diamond League': {
     _main: 'Q301839',
