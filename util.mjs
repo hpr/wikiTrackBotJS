@@ -104,7 +104,10 @@ export const formatPlace = (place) => place.replaceAll('.', '').trim();
 
 export const getFullSuffix = (sexNameUrlSlug, categoryName, suffixEvt) => {
   if (suffixEvt.split(' ').includes('mixed')) return ` – ${suffixEvt}`; // must be first to handle mixed xc relay
-  if (['World Cross Country Championships'].includes(categoryName)) return ` – senior ${diminufy(sexNameUrlSlug, categoryName)} race`;
+  if (['World Cross Country Championships'].includes(categoryName)) {
+    if (suffixEvt === 'U20 race') return ` – junior ${diminufy(sexNameUrlSlug, categoryName)} race`;
+    return ` – senior ${diminufy(sexNameUrlSlug, categoryName)} race`;
+  }
 
   return ` – ${diminufy(sexNameUrlSlug, categoryName)} ${suffixEvt}`;
 };
