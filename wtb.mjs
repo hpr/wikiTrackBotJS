@@ -311,9 +311,6 @@ export async function enrich(ids) {
         amount: markToSecs(mark),
         precision: getPrecision(mark),
         unit: WD.Q_SECOND,
-        qualifiers: {
-          [WD.P_DETERMINATION_METHOD]: mark.includes('(') ? WD.Q_RANKING_ACHIEVED_BY_HEATS : undefined,
-        },
       };
 
       const disciplineAtEventClaims = {
@@ -328,6 +325,7 @@ export async function enrich(ids) {
           qualifiers: {
             [WD.P_RANKING]: formatPlace(place),
             [WD.P_RACE_TIME]: raceTime,
+            [WD.P_DETERMINATION_METHOD]: mark.includes('(') ? WD.Q_RANKING_ACHIEVED_BY_HEATS : undefined,
           },
           references,
         },
@@ -375,6 +373,7 @@ export async function enrich(ids) {
           [WD.P_RANKING]: formatPlace(place),
           // [WD.P_COMPETITION_CLASS]: competitionClass, // not allowed per constraint
           [WD.P_RACE_TIME]: raceTime, // TODO fix for field events
+          [WD.P_DETERMINATION_METHOD]: mark.includes('(') ? WD.Q_RANKING_ACHIEVED_BY_HEATS : undefined,
           [WD.P_LOCATION]: location,
         },
         references,
