@@ -260,6 +260,7 @@ export const honourCats = {
     GER: 'Q320803',
     GDR: 'Q55610396',
     FRG: 'Q55637549',
+    IRL: 'Q116327911',
     GRE: 'Q74110549',
     HUN: 'Q17098551',
     IND: 'Q96382089',
