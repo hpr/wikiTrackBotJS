@@ -73,6 +73,7 @@ export const WD = {
   Q_DEPRECATED_IAAF_ID_FORMAT: 'Q116282346',
   Q_REDIRECT: 'Q45403344',
   Q_WEEK: 'Q23387',
+  Q_RANKING_ACHIEVED_BY_HEATS: 'Q116312252',
 };
 
 export const honourCats = {
@@ -106,6 +107,7 @@ export const honourCats = {
   'World Cross Country Championships': 'Q1141381',
   'Youth Olympic Games': 'Q21198340',
   'Pan American Games': 'Q2869223',
+  'Pan American U20 Championships': 'Q2955753',
   'IAAF World Relays': 'Q926006',
   'World Athletics Final': 'Q1471412',
   'Grand Prix Final': 'Q1585186',

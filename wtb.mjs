@@ -307,6 +307,15 @@ export async function enrich(ids) {
       console.log(discipline, yearEvent.labels.en);
       yearEvent.claims[WD.P_HAS_PARTS] ??= [];
 
+      const raceTime = {
+        amount: markToSecs(mark),
+        precision: getPrecision(mark),
+        unit: WD.Q_SECOND,
+        qualifiers: {
+          [WD.P_NATURE_OF_STATEMENT]: mark.includes('(') ? WD.Q_RANKING_ACHIEVED_BY_HEATS : undefined,
+        },
+      };
+
       const disciplineAtEventClaims = {
         [WD.P_INSTANCE_OF]: WD.Q_SPORTING_EVENT,
         [WD.P_PART_OF]: yearEvent.id,
@@ -318,7 +327,7 @@ export async function enrich(ids) {
           value: athObj.id,
           qualifiers: {
             [WD.P_RANKING]: formatPlace(place),
-            [WD.P_RACE_TIME]: { amount: markToSecs(mark), precision: getPrecision(mark), unit: WD.Q_SECOND },
+            [WD.P_RACE_TIME]: raceTime,
           },
           references,
         },
@@ -365,7 +374,7 @@ export async function enrich(ids) {
         qualifiers: {
           [WD.P_RANKING]: formatPlace(place),
           // [WD.P_COMPETITION_CLASS]: competitionClass, // not allowed per constraint
-          [WD.P_RACE_TIME]: { amount: markToSecs(mark), precision: getPrecision(mark), unit: WD.Q_SECOND }, // TODO fix for field events
+          [WD.P_RACE_TIME]: raceTime, // TODO fix for field events
           [WD.P_LOCATION]: location,
         },
         references,
@@ -463,5 +472,5 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich([(await getMembers(wbk, clubs.UAC)).map((qid) => ({ qid }))[7]]);
+await enrich([(await getMembers(wbk, clubs.UAC)).map((qid) => ({ qid }))[9]]);
 // await enrich([{ qid: 'Q107535252' }]);

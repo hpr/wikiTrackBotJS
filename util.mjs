@@ -3,6 +3,7 @@ import countries from 'world-countries';
 import fs from 'fs';
 
 export const markToSecs = (mark) => {
+  if (mark.includes('(')) mark = mark.slice(0, mark.indexOf('(')).trim();
   mark = mark.replaceAll('h', '').replaceAll('+', '').replaceAll('*', '').trim();
   const groups = mark.split(':');
   let res;
