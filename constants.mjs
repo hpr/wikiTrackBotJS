@@ -11,6 +11,12 @@ export const removeTweaks = {
       'One Mile': ['11 MAR 2017'], // TODO add to Josh Kerr
     },
   },
+  Q110755417: {
+    // Geordie Beamish
+    'Diamond League': {
+      'One Mile': ['20 AUG 2021'], // b heat
+    },
+  },
 };
 
 export const WD = {
@@ -176,7 +182,7 @@ export const honourCats = {
     'Paris Meeting': 'Q983696',
     'Paris Meeting AREVA': 'Q983696', // dupe
     'Paris Meeting Areva': 'Q983696', // dupe
-    'Eugene Prefontaine Classic': 'Q679614',
+    'Eugene Prefontaine Classic': 'Q679614', // TODO separate Bowerman mile from B heat
     'Bislett Games': 'Q866398',
     'Oslo ExxonMobil Bislett Games': 'Q866398', // dupe
     'Shanghai IAAF Diamond League Meeting': 'Q942004',
