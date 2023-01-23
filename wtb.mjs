@@ -241,7 +241,7 @@ export async function enrich(ids) {
       let yearEvent;
 
       const honourCatEntity = wbk.simplify.entities(await (await fetch(wbk.getEntities(qCat))).json())[qCat];
-      const qYearEvent = tempYearEvents[`${year} ${honourCatEntity.labels.en}`] ?? (await exactSearch(wbk, `${year} ${honourCatEntity.labels.en}`));
+      const qYearEvent = tempYearEvents[`${year} ${honourCatEntity.labels.en}`]?.id ?? (await exactSearch(wbk, `${year} ${honourCatEntity.labels.en}`));
       if (qYearEvent) yearEvent = wbk.simplify.entities(await (await fetch(wbk.getEntities(qYearEvent))).json())[qYearEvent];
 
       honourCatEntity.claims[WD.P_MAIN_CATEGORY] ??= [];
@@ -463,5 +463,5 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich([(await getMembers(wbk, clubs.UAC)).map((qid) => ({ qid }))[6]]);
+await enrich([(await getMembers(wbk, clubs.UAC)).map((qid) => ({ qid }))[7]]);
 // await enrich([{ qid: 'Q107535252' }]);
