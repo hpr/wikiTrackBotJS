@@ -102,7 +102,9 @@ export async function enrich(ids) {
 
     console.log(aaId);
     const { data } = skip
-      ? { data: { competitor: { basicData: {}, resultsByYear: { activeYears: [] }, honours: [], personalBests: { results: [] } } } }
+      ? {
+          data: { competitor: { basicData: {}, resultsByYear: { activeYears: [] }, honours: [], personalBests: { results: [] }, worldRankings: { best: [] } } },
+        }
       : await (
           await fetch(endpoint, {
             headers: { 'x-api-key': apiKey },
@@ -116,9 +118,10 @@ export async function enrich(ids) {
         ).json();
     console.log(data.competitor.basicData);
     let { firstName, lastName, givenName, familyName, countryCode, birthDate, sexNameUrlSlug, sexCode, iaafId } = data.competitor.basicData;
+    const { best } = data.competitor.worldRankings;
     firstName ??= givenName;
     lastName ??= familyName;
-    sexNameUrlSlug ??= sexCode === 'M' ? 'men' : sexCode === 'F' ? 'women' : undefined;
+    sexNameUrlSlug ??= sexCode === 'M' ? 'men' : sexCode === 'F' ? 'women' : (best[0]?.eventGroup ?? '').split("'")[0].toLowerCase() || undefined;
 
     const athName = `${firstName} ${nameFixer(lastName)}`;
 

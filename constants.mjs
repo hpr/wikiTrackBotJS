@@ -313,6 +313,15 @@ query GetCompetitorBasicInfo($id: Int, $urlSlug: String) {
       }
       __typename
     }
+    worldRankings {
+      best {
+        eventGroup
+        place
+        weeks
+        __typename
+      }
+      __typename
+    }
     honours {
       categoryName
       results {
