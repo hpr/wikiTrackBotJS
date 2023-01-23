@@ -17,6 +17,12 @@ export const removeTweaks = {
       'One Mile': ['20 AUG 2021'], // b heat
     },
   },
+  Q116168288: {
+    // Reed Brown
+    'National Championships': {
+      'One Mile': ['02 JUL 2016'], // exhibition race only
+    },
+  },
 };
 
 export const WD = {
@@ -88,7 +94,8 @@ export const honourCats = {
   'World Indoor Championships': 'Q725169', // filled
   'NCAA Championships': 'Q116202306', // empty
   'NCAA Indoor Championships': 'Q116202343', // empty
-  'Diamond League Final': { // TODO problem: 'diamond league final' are all dupes of 'diamond league', check if we should always skip this?
+  'Diamond League Final': {
+    // TODO problem: 'diamond league final' are all dupes of 'diamond league', check if we should always skip this?
     _sameAs: 'Diamond League',
   },
   'World (Continental) Cup': 'Q1161047', // empty

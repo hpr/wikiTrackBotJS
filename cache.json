@@ -56,7 +56,8 @@
     "BOT": "Q963",
     "CGO": "Q971",
     "PUR": "Q1183",
-    "BEN": "Q962"
+    "BEN": "Q962",
+    "GEO": "Q4962"
   },
   "disciplineCache": {
     "U20 Race": "Q55247191",
@@ -677,7 +678,11 @@
     "Porto Novo (BEN)": "Q962",
     "Palais Omnisports de Paris-Bercy, Paris (FRA)": "Q142",
     "National Indoor Arena, Birmingham (GBR)": "Q145",
-    "Landover, MD (USA)": "Q1811669"
+    "Landover, MD (USA)": "Q1811669",
+    "Ratina Stadium, Tampere (FIN)": "Q33",
+    "Grosseto (ITA)": "Q38",
+    "New District Stadium, Tbilisi (GEO)": "Q4962",
+    "Cardiff (GBR)": "Q145"
   },
   "competitionClassCache": {
     "junior men's race": "Q55247419",
