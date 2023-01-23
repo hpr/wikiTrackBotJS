@@ -471,5 +471,5 @@ if (process.argv.length > 2) {
   await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
 }
 
-await enrich([(await getMembers(wbk, clubs.BB)).map((qid) => ({ qid }))[2]]);
+await enrich([(await getMembers(wbk, clubs.BB)).map((qid) => ({ qid }))[7]]);
 // await enrich([{ qid: 'Q107535252' }]);
