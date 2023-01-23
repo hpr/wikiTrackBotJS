@@ -108,6 +108,8 @@ export const honourCats = {
   'European Team Championships': 'Q1630626', // empty
   'European U20 Championships': 'Q428792', // sparse
   'World University Games': 'Q1988040',
+  'Ibero-American Championships ': 'Q2632641',
+  'Ibero-American Championships': 'Q2632641', // dupe, correcting above typo
   'World U18 Championships': 'Q975128', // needs fill
   'Asian Games': 'Q2629590',
   'World Half Marathon Championships': 'Q1415179',
