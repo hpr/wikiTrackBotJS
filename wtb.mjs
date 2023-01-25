@@ -486,4 +486,4 @@ if (process.argv.length > 2) {
 }
 
 // await enrich((await getMembers(wbk, clubs.EE)).map((qid) => ({ qid })).slice(0));
-// await enrich([{ qid: 'Q107535252' }]);
+await enrich([{ qid: 'Q24809853' }]);
