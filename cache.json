@@ -57,7 +57,9 @@
     "CGO": "Q971",
     "PUR": "Q1183",
     "BEN": "Q962",
-    "GEO": "Q4962"
+    "GEO": "Q4962",
+    "KAZ": "Q232",
+    "TPE": "Q865"
   },
   "disciplineCache": {
     "U20 Race": "Q55247191",
@@ -698,7 +700,15 @@
     "University of Louisiana, Lafayette, LA (USA)": "Q128891",
     "Clyde Hart Track & Field Stadium, Waco, TX (USA)": "Q128244",
     "Lancaster, TX (USA)": "Q976739",
-    "Littleton, CO (USA)": "Q953583"
+    "Littleton, CO (USA)": "Q953583",
+    "Doha (QAT)": "Q846",
+    "Nur-Sultan (KAZ)": "Q232",
+    "Taipei City (TPE)": "Q865",
+    "Växjö (SWE)": "Q34",
+    "Kuopio (FIN)": "Q33",
+    "Ekrem Koçak Atletizm Pisti, Istanbul (TUR)": "Q43",
+    "Aspire Academy Warm Up Track, Doha (QAT)": "Q846",
+    "Redlands, CA (USA)": "Q753830"
   },
   "competitionClassCache": {
     "junior men's race": "Q55247419",
