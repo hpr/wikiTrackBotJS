@@ -103,7 +103,11 @@
     "100 Metres": "Q164761",
     "One Hour": "Q2164200",
     "100 Metres Hurdles": "Q164731",
-    "5 Miles Road": "Q78144177"
+    "5 Miles Road": "Q78144177",
+    "150 Metres": "Q2807981",
+    "4x200 Metres Relay": "Q3114131",
+    "60 Metres Hurdles": "Q1026754",
+    "Long Jump": "Q170737"
   },
   "locationCache": {
     "Randalls Island, NY (USA)": "Q1198892",
@@ -685,7 +689,15 @@
     "Ratina Stadium, Tampere (FIN)": "Q33",
     "Grosseto (ITA)": "Q38",
     "New District Stadium, Tbilisi (GEO)": "Q4962",
-    "Cardiff (GBR)": "Q145"
+    "Cardiff (GBR)": "Q145",
+    "AP Ranch, Fort Worth, TX (USA)": "Q16558",
+    "Ansin Sports Complex, Miramar, FL (USA)": "Q745168",
+    "Montverde Academy, Montverde, FL (USA)": "Q2092516",
+    "Mike A. Myers Stadium, Austin, TX (USA)": "Q16559",
+    "Queretaro (MEX)": "Q96",
+    "University of Louisiana, Lafayette, LA (USA)": "Q128891",
+    "Clyde Hart Track & Field Stadium, Waco, TX (USA)": "Q128244",
+    "Lancaster, TX (USA)": "Q976739"
   },
   "competitionClassCache": {
     "junior men's race": "Q55247419",
@@ -726,6 +738,9 @@
     "men's marathon": "Q55246435",
     "men's 400 metres": "Q55243939",
     "women's 5K run": "Q116333101",
-    "mixed 2 × 2 × 400 metres relay": "Q109042920"
+    "mixed 2 × 2 × 400 metres relay": "Q109042920",
+    "women's 4 × 100 metres relay": "Q55247559",
+    "women's 100 metres": "Q55243435",
+    "women's 100 metres hurdles": "Q55243520"
   }
 }

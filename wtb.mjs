@@ -13,6 +13,7 @@ import {
   GRAPHQL_QUERY,
   honourCats,
   HONOURMEETS_JSON,
+  metresDisciplines,
   removeTweaks,
   SUFFIXDISCIPLINES_JSON,
   WD,
@@ -304,7 +305,7 @@ export async function enrich(ids) {
       const raceTime = {
         amount: markToSecs(mark),
         precision: getPrecision(mark),
-        unit: WD.Q_SECOND,
+        unit: metresDisciplines.includes(disciplineCache[discipline]) ? WD.Q_METRE : WD.Q_SECOND,
       };
 
       const disciplineAtEventClaims = {
@@ -381,7 +382,7 @@ export async function enrich(ids) {
       personalBests.push({
         amount: markToSecs(mark),
         precision: getPrecision(mark),
-        unit: WD.Q_SECOND,
+        unit: metresDisciplines.includes(disciplineCache[discipline]) ? WD.Q_METRE : WD.Q_SECOND,
         qualifiers: {
           [WD.P_SPORTS_DISCIPLINE_COMPETED_IN]: disciplineCache[discipline],
           [WD.P_POINT_IN_TIME]: new Date(date).toISOString().split('T')[0],
@@ -486,4 +487,4 @@ if (process.argv.length > 2) {
 }
 
 // await enrich((await getMembers(wbk, clubs.EE)).map((qid) => ({ qid })).slice(0));
-await enrich([{ qid: 'Q24809853' }]);
+// await enrich([{ qid: 'Q64514634' }]);
