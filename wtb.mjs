@@ -483,8 +483,8 @@ export async function enrich(ids) {
 }
 
 if (process.argv.length > 2) {
-  await enrich(process.argv.slice(2).map((arg) => ({ aaId: arg })));
+  await enrich(process.argv.slice(2).map((arg) => (arg.startsWith('Q') ? { qid: arg } : { aaId: arg })));
 }
 
 // await enrich((await getMembers(wbk, clubs.EE)).map((qid) => ({ qid })).slice(0));
-// await enrich([{ qid: 'Q64514634' }]);
+// await enrich([{ qid: 'Q107341982' }]);
