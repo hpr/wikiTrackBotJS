@@ -79,6 +79,7 @@ export const WD = {
   Q_INDOOR_ATHLETICS: 'Q10235779',
   Q_SECOND: 'Q11574',
   Q_METRE: 'Q11573',
+  Q_POINT: 'Q3393320',
   Q_ILLEGAL_MARK: 'Q116142274',
   Q_WA_RANKINGS: 'Q65054450',
   Q_SPORTING_EVENT: 'Q16510064',
@@ -96,6 +97,9 @@ export const WD = {
   Q_DISCUS_THROW: 'Q182570',
   Q_JAVELIN_THROW: 'Q178108',
   Q_HAMMER_THROW: 'Q184865',
+  Q_HEPATHLON: 'Q243264',
+  Q_DECATHLON: 'Q184654',
+  Q_ATHLETICS_PENTATHLON: 'Q24688986', 
 };
 
 export const metresDisciplines = [
@@ -108,6 +112,12 @@ export const metresDisciplines = [
   WD.Q_JAVELIN_THROW,
   WD.Q_HAMMER_THROW,
 ];
+
+export const pointsDisciplines = [
+  WD.Q_HEPTATHLON,
+  WD.Q_DECATHLON,
+  WD.Q_ATHLETICS_PENTATHLON,
+]
 
 export const honourCats = {
   'Olympic Games': 'Q715044', // filled
@@ -303,6 +313,7 @@ export const honourCats = {
     KEN: 'Q28223308',
     LAT: 'Q6497315',
     LTU: 'Q6648345',
+    MAR: 'Q118558217',
     NED: 'Q2537744',
     NZL: 'Q55625060',
     NOR: 'Q11992167',

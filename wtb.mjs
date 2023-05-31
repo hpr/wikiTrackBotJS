@@ -14,6 +14,7 @@ import {
   honourCats,
   HONOURMEETS_JSON,
   metresDisciplines,
+  pointsDisciplines,
   removeTweaks,
   SUFFIXDISCIPLINES_JSON,
   WD,
@@ -305,7 +306,11 @@ export async function enrich(ids) {
       const raceTime = {
         amount: markToSecs(mark),
         precision: getPrecision(mark),
-        unit: metresDisciplines.includes(disciplineCache[discipline]) ? WD.Q_METRE : WD.Q_SECOND,
+        unit: metresDisciplines.includes(disciplineCache[discipline])
+          ? WD.Q_METRE
+          : pointsDisciplines.includes(disciplineCache[discipline])
+          ? WD.Q_POINT
+          : WD.Q_SECOND,
       };
 
       const disciplineAtEventClaims = {
@@ -382,7 +387,11 @@ export async function enrich(ids) {
       personalBests.push({
         amount: markToSecs(mark),
         precision: getPrecision(mark),
-        unit: metresDisciplines.includes(disciplineCache[discipline]) ? WD.Q_METRE : WD.Q_SECOND,
+        unit: metresDisciplines.includes(disciplineCache[discipline])
+          ? WD.Q_METRE
+          : pointsDisciplines.includes(disciplineCache[discipline])
+          ? WD.Q_POINT
+          : WD.Q_SECOND,
         qualifiers: {
           [WD.P_SPORTS_DISCIPLINE_COMPETED_IN]: disciplineCache[discipline],
           [WD.P_POINT_IN_TIME]: new Date(date).toISOString().split('T')[0],
