@@ -64,7 +64,8 @@
     "MRI": "Q1027",
     "EGY": "Q79",
     "JOR": "Q810",
-    "BER": "Q23635"
+    "BER": "Q23635",
+    "NGR": "Q1033"
   },
   "disciplineCache": {
     "U20 Race": "Q55247191",
@@ -776,7 +777,19 @@
     "Bakersfield, CA (USA)": "Q49256",
     "PVAMU Track Stadium, Prairie View, TX (USA)": "Q973057",
     "Mount Tahoma (USA)": "Q194057",
-    "Centralia, WA (USA)": "Q868700"
+    "Centralia, WA (USA)": "Q868700",
+    "Estadio Enrique Lopez Cuenca, Nerja (ESP)": "Q29",
+    "Estadi Joan Serrahima, Barcelona (ESP)": "Q29",
+    "Pista Cubierta Carlos Gil Perez, Salamanca (ESP)": "Q29",
+    "Elvissa (ESP)": "Q29",
+    "Bungertstadion, Rehlingen (GER)": "Q183",
+    "Halle Michel d'Ornano, Mondeville (FRA)": "Q142",
+    "Burjassot (ESP)": "Q29",
+    "Aranda de Duero (ESP)": "Q29",
+    "O Barco de Valdeorras (ESP)": "Q29",
+    "Alcobendas (ESP)": "Q29",
+    "Abuja (NGR)": "Q1033",
+    "Tuscaloosa, AL (USA)": "Q79580"
   },
   "competitionClassCache": {
     "junior men's race": "Q55247419",
@@ -825,6 +838,8 @@
     "men's 200 metres": "Q55243755",
     "men's 100 metres": "Q55243390",
     "women's heptathlon": "Q3730761",
-    "men's 110 metres hurdles": "Q55243565"
+    "men's 110 metres hurdles": "Q55243565",
+    "women's 4 × 200 metres relay": "Q12751445",
+    "women's 200 metres": "Q55243804"
   }
 }

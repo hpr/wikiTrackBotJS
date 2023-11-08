@@ -506,4 +506,6 @@ export const SUFFIXES = [
   " – men's octathlon",
   " – men's sprint medley relay",
   " – women's sprint medley relay",
+  " – women's 4 × 200 metres relay",
+  " – men's 4 × 200 metres relay",
 ];
