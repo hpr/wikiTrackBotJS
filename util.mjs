@@ -24,6 +24,7 @@ export const getLocation = async (wbk, venue, locationCache, countryCodeCache) =
       const { entities } = await (await fetch(wbk.getEntitiesFromSitelinks(locationSearch))).json();
       location = Object.keys(entities)[0];
     } else {
+      if (venue.endsWith(' (i)')) venue = venue.slice(0, -4);
       const countryCode = venue.slice(venue.lastIndexOf('(') + 1, venue.lastIndexOf(')'));
       let qCountry = countryCodeCache[countryCode];
       if (!qCountry) {

@@ -121,7 +121,8 @@
     "Shot Put": "Q180935",
     "Javelin Throw": "Q178108",
     "Heptathlon": "Q243264",
-    "110 Metres Hurdles": "Q170004"
+    "110 Metres Hurdles": "Q170004",
+    "10 Kilometres Road": "Q2774730"
   },
   "locationCache": {
     "Randalls Island, NY (USA)": "Q1198892",
@@ -789,7 +790,12 @@
     "O Barco de Valdeorras (ESP)": "Q29",
     "Alcobendas (ESP)": "Q29",
     "Abuja (NGR)": "Q1033",
-    "Tuscaloosa, AL (USA)": "Q79580"
+    "Tuscaloosa, AL (USA)": "Q79580",
+    "Nice (FRA)": "Q142",
+    "Aubiére (FRA)": "Q142",
+    "Monaco (MON)": "Q235",
+    "Montreuil-sous-Bois (FRA)": "Q142",
+    "Aix-les-Bains (FRA)": "Q142"
   },
   "competitionClassCache": {
     "junior men's race": "Q55247419",
